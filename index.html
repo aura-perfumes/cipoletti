@@ -548,7 +548,7 @@ input,textarea,select{font-family:inherit}
 
 <!-- ══ SCREEN 1: PORTAL GATE ══════════════════ -->
 <div id="s-portal" class="screen active">
-  <div class="portal-bottle">🫙</div>
+  <div class="portal-bottle" id="portal-media"><span class="portal-bottle-fallback">🫙</span></div>
   <p class="portal-meta anim d1">Maison de Parfum · Est. 2009</p>
   <div class="portal-cards">
     <button class="portal-card teal anim d2" onclick="App.goStaff()">
@@ -855,6 +855,25 @@ input,textarea,select{font-family:inherit}
         </div>
       </div>
       <div class="config-section">
+        <div class="config-section-title">🖼 Imagen en panel inicial</div>
+        <div class="config-hint" style="margin-bottom:.9rem">Esta imagen se muestra en el panel principal, arriba de los botones "Personal" y "Cliente".</div>
+        <div class="img-upload-grid">
+          <div>
+            <label class="config-label">Cargar imagen del panel inicial</label>
+            <input type="file" id="cfg-portal-img" accept="image/*" onchange="Dash.loadPortalImage(event)"/>
+          </div>
+          <div>
+            <label class="config-label">Vista previa</label>
+            <div class="img-preview" id="portal-img-preview">Vista previa del panel inicial</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:.75rem;flex-wrap:wrap;margin-top:1rem">
+          <button class="btn-dark" onclick="Dash.applyPortalImage()">Guardar imagen del panel</button>
+          <button class="btn-light" onclick="Dash.clearPortalImage()">Quitar imagen</button>
+        </div>
+      </div>
+
+      <div class="config-section">
         <div class="config-section-title">🗂 Categorías y subcategorías</div>
         <div class="taxonomy-layout">
           <div class="tax-box">
@@ -1128,7 +1147,7 @@ const DEFAULT_TAXONOMY={
 const DEFAULT_HEATMAP={hero:18,filters:11,productCard:25,addToCart:20,cart:8,whatsapp:7,nav:6,about:4};
 const DEFAULT_STORE_CONFIG={
   waNum:'5492942444236',waName:'AURA — Tienda Online',bannerText:'Nueva colección Otoño/Invierno 2026 — Envío gratis (Cipolletti o Neuquén) en pedidos mayores a $50.000',bannerFg:'#C9A84C',bannerOn:true,
-  dir:'A coordinar',hs:'Lun-Vie 10-19hs, Sáb 10-14hs',email:'hola@aura.com',heroEnc:'Nueva colección Otoño/Invierno 2026 — Envío gratis (Cipolletti o Neuquén) en pedidos mayores a $50.000',heroTitle:'Elevamos Tu Esencia',heroSub:'Fragancias que hablan antes que vos.',heroBg:''
+  dir:'A coordinar',hs:'Lun-Vie 10-19hs, Sáb 10-14hs',email:'hola@aura.com',heroEnc:'Nueva colección Otoño/Invierno 2026 — Envío gratis (Cipolletti o Neuquén) en pedidos mayores a $50.000',heroTitle:'Elevamos Tu Esencia',heroSub:'Fragancias que hablan antes que vos.',heroBg:'',portalImg:''
 };
 const ORIGIN={lat:-38.935186,lng:-68.010975};
 const config={rate:500,waNum:''};
@@ -1228,6 +1247,9 @@ const Dash={
   async loadHeroBackground(event){const file=event.target.files?.[0];if(!file)return;STORE._pendingHeroBg=await readFileAsDataURL(file);const preview=document.getElementById('hero-bg-preview');preview.style.backgroundImage=`url('${STORE._pendingHeroBg}')`;preview.textContent=''},
   clearHeroBackground(){STORE._pendingHeroBg='';STORE.heroBg='';const preview=document.getElementById('hero-bg-preview');preview.style.backgroundImage='';preview.textContent='Vista previa de fondo principal';saveStoreConfig();applyStoreConfig()},
   applyHeroBackground(){if(typeof STORE._pendingHeroBg!=='undefined')STORE.heroBg=STORE._pendingHeroBg;saveStoreConfig();applyStoreConfig();alert('✓ Fondo de portada actualizado.')},
+  async loadPortalImage(event){const file=event.target.files?.[0];if(!file)return;STORE._pendingPortalImg=await readFileAsDataURL(file);const preview=document.getElementById('portal-img-preview');if(preview){preview.style.backgroundImage=`url('${STORE._pendingPortalImg}')`;preview.textContent=''}},
+  clearPortalImage(){STORE._pendingPortalImg='';STORE.portalImg='';const preview=document.getElementById('portal-img-preview');if(preview){preview.style.backgroundImage='';preview.textContent='Vista previa del panel inicial'}saveStoreConfig();applyStoreConfig()},
+  applyPortalImage(){if(typeof STORE._pendingPortalImg!=='undefined')STORE.portalImg=STORE._pendingPortalImg;saveStoreConfig();applyStoreConfig();alert('✓ Imagen del panel inicial actualizada.')},
   saveNosotros(){const vals={title:document.getElementById('cfg-nos-title').value,p1:document.getElementById('cfg-nos-p1').value,p2:document.getElementById('cfg-nos-p2').value,s1v:document.getElementById('cfg-s1v').value,s1l:document.getElementById('cfg-s1l').value,s2v:document.getElementById('cfg-s2v').value,s2l:document.getElementById('cfg-s2l').value,s3v:document.getElementById('cfg-s3v').value,s3l:document.getElementById('cfg-s3l').value};document.getElementById('nos-modal-title').textContent=vals.title;document.getElementById('nos-modal-p1').textContent=vals.p1;document.getElementById('nos-modal-p2').textContent=vals.p2;['s1','s2','s3'].forEach(k=>{document.getElementById('nos-'+k+'v').textContent=vals[k+'v'];document.getElementById('nos-'+k+'l').textContent=vals[k+'l'];});localStorage.setItem('aura_nosotros',JSON.stringify(vals));alert('✓ Nosotros actualizado.')},
   exportCSV(){const rows=[['Fragancia','Categoría','Subcategoría','Stock','Precio'],...PRODUCTS.map(p=>[p.name,getCategoryName(p.cat),getSubcategoryName(p.cat2),p.stock||0,p.price])];const a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(rows.map(r=>r.join(',')).join('\n'));a.download='aura-inventario.csv';a.click()},
   renderTaxonomy(){const catList=document.getElementById('tax-cat-list');const subList=document.getElementById('tax-sub-list');if(catList)catList.innerHTML=TAXONOMY.categories.map(c=>`<span class="tax-tag">${escapeHtml(c.name)} <button type="button" onclick="Dash.removeCategory('${c.id}')">×</button></span>`).join('');if(subList)subList.innerHTML=TAXONOMY.subcategories.map(s=>`<span class="tax-tag">${escapeHtml(getCategoryName(s.categoryId))}: ${escapeHtml(s.name)} <button type="button" onclick="Dash.removeSubcategory('${s.id}')">×</button></span>`).join('');this.populateProductSelects();renderStoreFilters();this.renderInventory()},
@@ -1237,7 +1259,7 @@ const Dash={
   removeSubcategory(id){if(PRODUCTS.some(p=>p.cat2===id)){alert('No podés eliminar una subcategoría que está en uso por productos.');return}TAXONOMY.subcategories=TAXONOMY.subcategories.filter(s=>s.id!==id);saveTaxonomyLS();this.renderTaxonomy()}
 };
 
-function applyStoreConfig(){document.getElementById('cfg-wa-num').value=STORE.waNum;document.getElementById('cfg-wa-name').value=STORE.waName;document.getElementById('cfg-banner-txt').value=STORE.bannerText;document.getElementById('cfg-banner-fg').value=STORE.bannerFg;document.getElementById('cfg-banner-on').checked=!!STORE.bannerOn;document.getElementById('cfg-dir').value=STORE.dir;document.getElementById('cfg-hs').value=STORE.hs;document.getElementById('cfg-email').value=STORE.email;document.getElementById('cfg-hero-enc').value=STORE.heroEnc;document.getElementById('cfg-hero-title').value=STORE.heroTitle;document.getElementById('cfg-hero-sub').value=STORE.heroSub;const ann=document.getElementById('store-announce');ann.textContent=STORE.heroEnc||STORE.bannerText;ann.style.color=STORE.bannerFg;ann.style.display=STORE.bannerOn?'':'none';document.getElementById('store-hero-title').innerHTML=buildHeroTitle(STORE.heroTitle);document.getElementById('store-hero-sub').textContent=STORE.heroSub;const hero=document.getElementById('store-hero');if(STORE.heroBg){hero.style.setProperty('--hero-overlay',`url('${STORE.heroBg}')`);const preview=document.getElementById('hero-bg-preview');if(preview){preview.style.backgroundImage=`url('${STORE.heroBg}')`;preview.textContent=''}}else{hero.style.removeProperty('--hero-overlay');const preview=document.getElementById('hero-bg-preview');if(preview){preview.style.backgroundImage='';preview.textContent='Vista previa de fondo principal'}}config.waNum=STORE.waNum}
+function applyStoreConfig(){document.getElementById('cfg-wa-num').value=STORE.waNum;document.getElementById('cfg-wa-name').value=STORE.waName;document.getElementById('cfg-banner-txt').value=STORE.bannerText;document.getElementById('cfg-banner-fg').value=STORE.bannerFg;document.getElementById('cfg-banner-on').checked=!!STORE.bannerOn;document.getElementById('cfg-dir').value=STORE.dir;document.getElementById('cfg-hs').value=STORE.hs;document.getElementById('cfg-email').value=STORE.email;document.getElementById('cfg-hero-enc').value=STORE.heroEnc;document.getElementById('cfg-hero-title').value=STORE.heroTitle;document.getElementById('cfg-hero-sub').value=STORE.heroSub;const ann=document.getElementById('store-announce');ann.textContent=STORE.heroEnc||STORE.bannerText;ann.style.color=STORE.bannerFg;ann.style.display=STORE.bannerOn?'':'none';document.getElementById('store-hero-title').innerHTML=buildHeroTitle(STORE.heroTitle);document.getElementById('store-hero-sub').textContent=STORE.heroSub;const hero=document.getElementById('store-hero');if(STORE.heroBg){hero.style.setProperty('--hero-overlay',`url('${STORE.heroBg}')`);const preview=document.getElementById('hero-bg-preview');if(preview){preview.style.backgroundImage=`url('${STORE.heroBg}')`;preview.textContent=''}}else{hero.style.removeProperty('--hero-overlay');const preview=document.getElementById('hero-bg-preview');if(preview){preview.style.backgroundImage='';preview.textContent='Vista previa de fondo principal'}}const portal=document.getElementById('portal-media');const portalPreview=document.getElementById('portal-img-preview');if(portal){if(STORE.portalImg){portal.classList.add('has-image');portal.innerHTML=`<img src="${STORE.portalImg}" alt="Imagen principal del portal">`;if(portalPreview){portalPreview.style.backgroundImage=`url('${STORE.portalImg}')`;portalPreview.textContent=''}}else{portal.classList.remove('has-image');portal.innerHTML='<span class="portal-bottle-fallback">🫙</span>';if(portalPreview){portalPreview.style.backgroundImage='';portalPreview.textContent='Vista previa del panel inicial'}}}config.waNum=STORE.waNum}
 
 const App={
   show(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));const el=document.getElementById(id);if(el)el.classList.add('active');if(id==='s-dashboard'){setTimeout(()=>{initChart();Dash.renderInventory();Dash.renderPedidos();Dash.renderClientes();Dash.updatePanelKPIs();Dash.renderTaxonomy()},80)}if(id==='s-store'){renderProducts();applyStoreConfig()}window.scrollTo(0,0)},
