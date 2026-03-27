@@ -429,6 +429,10 @@ input,textarea,select{font-family:inherit}
 .config-input:focus,.config-textarea:focus{border-color:#94a3b8}
 .config-textarea{resize:vertical;min-height:90px}
 .config-hint{font-size:.65rem;color:var(--green);margin-top:.3rem}
+.sync-status{margin-top:.85rem;padding:.85rem 1rem;border:1px solid var(--border);border-radius:10px;background:#f8fafc;font-size:.76rem;line-height:1.5;color:var(--text)}
+.sync-status strong{display:block;font-size:.64rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:.3rem}
+.sync-status.ok{border-color:rgba(16,185,129,.25);background:rgba(16,185,129,.06)}
+.sync-status.warn{border-color:rgba(245,158,11,.25);background:rgba(245,158,11,.08)}
 .color-row{display:flex;gap:1rem}
 .color-wrap{display:flex;flex-direction:column;gap:.3rem;flex:1}
 .color-input{width:100%;height:40px;border:1px solid var(--border);border-radius:8px;cursor:pointer;padding:2px}
@@ -874,6 +878,15 @@ input,textarea,select{font-family:inherit}
       </div>
 
       <div class="config-section">
+        <div class="config-section-title">☁️ Persistencia y sincronización compartida</div>
+        <div class="config-hint">Las imágenes y datos editables dejan de depender del navegador local cuando activás Firebase en <code>window.AURA_CLOUD_SYNC</code>. Desde ese momento, lo que cargues en un dispositivo se replica en los demás.</div>
+        <div id="sync-status" class="sync-status warn">
+          <strong>Estado actual</strong>
+          Modo local activo. Para persistencia real entre dispositivos, completá las credenciales de Firebase y poné <code>enabled: true</code> en el bloque <code>window.AURA_CLOUD_SYNC</code>.
+        </div>
+      </div>
+
+      <div class="config-section">
         <div class="config-section-title">🗂 Categorías y subcategorías</div>
         <div class="taxonomy-layout">
           <div class="tax-box">
@@ -1115,6 +1128,25 @@ input,textarea,select{font-family:inherit}
   </div>
 </div>
 
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-storage-compat.js"></script>
+<script>
+window.AURA_CLOUD_SYNC = window.AURA_CLOUD_SYNC || {
+  enabled: false,
+  firebase: {
+    apiKey: '',
+    authDomain: '',
+    projectId: '',
+    storageBucket: '',
+    messagingSenderId: '',
+    appId: ''
+  },
+  collection: 'aura_storefronts',
+  documentId: 'main'
+};
+</script>
+
 <script>
 const DEFAULT_PRODUCTS=[
   {id:'odyssey-tyrant',name:'Odyssey Tyrant',cat:'almizcle',cat2:'madera',price:12500,stock:1,badge:'Últimas unidades',emoji:'🥇',size:'35 ml · EDP',desc:'Salida intensa y amaderada, con presencia firme y elegante.',images:[]},
@@ -1155,18 +1187,105 @@ const config={rate:500,waNum:''};
 function slugify(v){return String(v||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'')||('id-'+Date.now())}
 function safeParse(key,fallback){try{const r=localStorage.getItem(key);return r?JSON.parse(r):fallback}catch(e){return fallback}}
 function saveJSON(key,value){localStorage.setItem(key,JSON.stringify(value))}
+function stripPendingStoreState(store){const clean={...(store||{})};Object.keys(clean).forEach(k=>{if(k.startsWith('_pending'))delete clean[k]});return clean}
+function getSerializableState(){return {products:PRODUCTS,orders:ORDERS,customers:CUSTOMERS,taxonomy:TAXONOMY,heatmap:HEATMAP,storeConfig:stripPendingStoreState(STORE)}}
+const SyncManager={
+  ready:false,
+  app:null,
+  db:null,
+  storage:null,
+  unsubscribe:null,
+  isApplyingRemote:false,
+  get settings(){return window.AURA_CLOUD_SYNC||{}},
+  isEnabled(){const s=this.settings;const fb=s.firebase||{};return !!(s.enabled&&fb.apiKey&&fb.projectId&&fb.appId&&fb.storageBucket)},
+  get docRef(){if(!this.db)return null;return this.db.collection(this.settings.collection||'aura_storefronts').doc(this.settings.documentId||'main')},
+  get storageRoot(){return (this.settings.documentId||'main').replace(/[^a-zA-Z0-9-_]/g,'-')},
+  updateStatus(message,type='warn'){const box=document.getElementById('sync-status');if(!box)return;box.className='sync-status '+type;box.innerHTML=`<strong>Estado actual</strong>${message}`},
+  async init(){
+    if(!this.isEnabled()){
+      this.updateStatus('Modo local activo. Para persistencia real entre dispositivos, completá las credenciales de Firebase y poné <code>enabled: true</code> en el bloque <code>window.AURA_CLOUD_SYNC</code>.','warn');
+      return false;
+    }
+    try{
+      const fb=this.settings.firebase||{};
+      this.app=firebase.apps.length?firebase.app():firebase.initializeApp(fb);
+      this.db=firebase.firestore();
+      this.storage=firebase.storage();
+      const ref=this.docRef;
+      const snap=await ref.get();
+      if(snap.exists){
+        this.applyRemoteState(snap.data()||{});
+      }else{
+        await ref.set({...getSerializableState(),createdAt:firebase.firestore.FieldValue.serverTimestamp(),updatedAt:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});
+      }
+      if(this.unsubscribe)this.unsubscribe();
+      this.unsubscribe=ref.onSnapshot(doc=>{
+        if(!doc.exists)return;
+        const data=doc.data()||{};
+        this.applyRemoteState(data,true);
+      });
+      this.ready=true;
+      this.updateStatus('Sincronización compartida activa. Las imágenes y cambios se guardan en Firebase Storage + Firestore y se reflejan en todos los dispositivos.','ok');
+      return true;
+    }catch(error){
+      console.error('Cloud sync init error',error);
+      this.ready=false;
+      this.updateStatus('No se pudo iniciar Firebase. La app sigue operando en modo local hasta corregir la configuración.','warn');
+      return false;
+    }
+  },
+  applyRemoteState(data,fromRealtime=false){
+    this.isApplyingRemote=true;
+    try{
+      if(Array.isArray(data.products)&&data.products.length){PRODUCTS=data.products.map(p=>({...p,images:Array.isArray(p.images)?p.images:[],size:p.size||'35 ml · EDP',desc:p.desc||'Fragancia destacada de AURA.'}));saveJSON('aura_products',PRODUCTS)}
+      if(Array.isArray(data.orders)){ORDERS=data.orders;saveJSON('aura_orders',ORDERS)}
+      if(Array.isArray(data.customers)){CUSTOMERS=data.customers;saveJSON('aura_customers',CUSTOMERS)}
+      if(data.taxonomy){TAXONOMY={...DEFAULT_TAXONOMY,...data.taxonomy};if(!TAXONOMY.categories?.length)TAXONOMY.categories=DEFAULT_TAXONOMY.categories;if(!TAXONOMY.subcategories)TAXONOMY.subcategories=[];saveJSON('aura_taxonomy',TAXONOMY)}
+      if(data.heatmap){HEATMAP={...DEFAULT_HEATMAP,...data.heatmap};saveJSON('aura_heatmap',HEATMAP)}
+      if(data.storeConfig){STORE={...DEFAULT_STORE_CONFIG,...data.storeConfig};saveJSON('aura_store_config',STORE)}
+      applyStoreConfig();
+      renderProducts();
+      Dash.renderInventory();
+      Dash.renderPedidos();
+      Dash.renderClientes();
+      Dash.updatePanelKPIs();
+      Dash.renderTaxonomy();
+      if(fromRealtime)this.updateStatus('Sincronización compartida activa. Se aplicaron cambios remotos detectados en otro dispositivo.','ok');
+    }finally{
+      this.isApplyingRemote=false;
+    }
+  },
+  async uploadImage(file,folder,fileName){
+    if(!file)return '';
+    if(!this.ready)return await readFileAsDataURL(file);
+    const safeName=(fileName||`${Date.now()}-${file.name||'imagen'}`).replace(/[^a-zA-Z0-9._-]/g,'-');
+    const path=`${this.storageRoot}/${folder}/${safeName}`;
+    const ref=this.storage.ref().child(path);
+    await ref.put(file,{contentType:file.type||'image/jpeg',cacheControl:'public,max-age=31536000,immutable'});
+    return await ref.getDownloadURL();
+  },
+  async persistState(){
+    if(!this.ready||this.isApplyingRemote)return;
+    try{
+      await this.docRef.set({...getSerializableState(),updatedAt:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});
+    }catch(error){
+      console.error('Cloud sync save error',error);
+      this.updateStatus('Falló el guardado remoto. Los cambios siguen en local hasta que Firebase vuelva a responder.','warn');
+    }
+  }
+};
 function loadProducts(){const items=safeParse('aura_products',null);return (items&&Array.isArray(items)&&items.length?items:DEFAULT_PRODUCTS).map(p=>({...p,images:Array.isArray(p.images)?p.images:[],size:p.size||'35 ml · EDP',desc:p.desc||'Fragancia destacada de AURA.'}))}
-function saveProductsLS(){saveJSON('aura_products',PRODUCTS)}
+function saveProductsLS(){saveJSON('aura_products',PRODUCTS);SyncManager.persistState()}
 function loadOrders(){return safeParse('aura_orders',[])}
-function saveOrdersLS(){saveJSON('aura_orders',ORDERS)}
+function saveOrdersLS(){saveJSON('aura_orders',ORDERS);SyncManager.persistState()}
 function loadCustomers(){return safeParse('aura_customers',[])}
-function saveCustomersLS(){saveJSON('aura_customers',CUSTOMERS)}
+function saveCustomersLS(){saveJSON('aura_customers',CUSTOMERS);SyncManager.persistState()}
 function loadTaxonomy(){const base=safeParse('aura_taxonomy',DEFAULT_TAXONOMY);if(!base.categories?.length)base.categories=DEFAULT_TAXONOMY.categories; if(!base.subcategories)base.subcategories=[]; return base}
-function saveTaxonomyLS(){saveJSON('aura_taxonomy',TAXONOMY)}
+function saveTaxonomyLS(){saveJSON('aura_taxonomy',TAXONOMY);SyncManager.persistState()}
 function loadHeatmap(){return {...DEFAULT_HEATMAP,...safeParse('aura_heatmap',{})}}
-function saveHeatmapLS(){saveJSON('aura_heatmap',HEATMAP)}
+function saveHeatmapLS(){saveJSON('aura_heatmap',HEATMAP);SyncManager.persistState()}
 function loadStoreConfig(){return {...DEFAULT_STORE_CONFIG,...safeParse('aura_store_config',{})}}
-function saveStoreConfig(){saveJSON('aura_store_config',STORE)}
+function saveStoreConfig(){saveJSON('aura_store_config',stripPendingStoreState(STORE));SyncManager.persistState()}
 function readFileAsDataURL(file){return new Promise((resolve,reject)=>{const fr=new FileReader();fr.onload=()=>resolve(fr.result);fr.onerror=reject;fr.readAsDataURL(file)})}
 function formatDateTime(iso){const d=new Date(iso);return d.toLocaleString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})}
 function haversine(lat1,lng1,lat2,lng2){const R=6371,d2r=Math.PI/180,dLat=(lat2-lat1)*d2r,dLng=(lng2-lng1)*d2r;const a=Math.sin(dLat/2)**2+Math.cos(lat1*d2r)*Math.cos(lat2*d2r)*Math.sin(dLng/2)**2;return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a))}
@@ -1236,21 +1355,21 @@ const Dash={
   openAddProduct(){document.getElementById('ap-title').textContent='Nueva Fragancia';document.getElementById('ap-edit-id').value='';['ap-name','ap-emoji','ap-badge','ap-desc'].forEach(id=>document.getElementById(id).value='');document.getElementById('ap-price').value='';document.getElementById('ap-stock').value='5';document.getElementById('ap-size').value='35 ml · EDP';this.populateProductSelects();document.getElementById('ap-img1').value='';document.getElementById('ap-img2').value='';document.getElementById('ap-img1-preview').style.backgroundImage='';document.getElementById('ap-img1-preview').textContent='Portada del producto';document.getElementById('ap-img2-preview').style.backgroundImage='';document.getElementById('ap-img2-preview').textContent='Imagen extra para carrusel';document.getElementById('ap-modal').classList.add('active')},
   closeAddProduct(){document.getElementById('ap-modal').classList.remove('active')},
   previewProductImage(evt,previewId){const file=evt.target.files?.[0];if(!file)return;const fr=new FileReader();fr.onload=()=>{const box=document.getElementById(previewId);box.style.backgroundImage=`url('${fr.result}')`;box.textContent=''};fr.readAsDataURL(file)},
-  async getProductImagesFromInputs(existing=[]){const img1=document.getElementById('ap-img1').files?.[0];const img2=document.getElementById('ap-img2').files?.[0];const out=[...(existing||[])];if(img1)out[0]=await readFileAsDataURL(img1);if(img2)out[1]=await readFileAsDataURL(img2);return out.filter(Boolean).slice(0,2)},
+  async getProductImagesFromInputs(productId,existing=[]){const img1=document.getElementById('ap-img1').files?.[0];const img2=document.getElementById('ap-img2').files?.[0];const out=[...(existing||[])];if(img1)out[0]=await SyncManager.uploadImage(img1,`products/${productId}`,'principal-'+Date.now()+'-'+(img1.name||'imagen'));if(img2)out[1]=await SyncManager.uploadImage(img2,`products/${productId}`,'secundaria-'+Date.now()+'-'+(img2.name||'imagen'));return out.filter(Boolean).slice(0,2)},
   editProduct(id){const p=PRODUCTS.find(x=>x.id===id);if(!p)return;this.populateProductSelects();document.getElementById('ap-title').textContent='Editar Fragancia';document.getElementById('ap-edit-id').value=id;document.getElementById('ap-name').value=p.name;document.getElementById('ap-cat').value=p.cat;this.syncSubcategorySelect();document.getElementById('ap-cat2').value=p.cat2||'';document.getElementById('ap-price').value=p.price;document.getElementById('ap-stock').value=p.stock||0;document.getElementById('ap-emoji').value=p.emoji||'';document.getElementById('ap-badge').value=p.badge||'';document.getElementById('ap-desc').value=p.desc||'';document.getElementById('ap-size').value=p.size||'35 ml · EDP';document.getElementById('ap-img1-preview').style.backgroundImage=p.images?.[0]?`url('${p.images[0]}')`:'';document.getElementById('ap-img1-preview').textContent=p.images?.[0]?'':'Portada del producto';document.getElementById('ap-img2-preview').style.backgroundImage=p.images?.[1]?`url('${p.images[1]}')`:'';document.getElementById('ap-img2-preview').textContent=p.images?.[1]?'':'Imagen extra para carrusel';document.getElementById('ap-modal').classList.add('active')},
-  async saveProduct(){const name=document.getElementById('ap-name').value.trim();const price=parseInt(document.getElementById('ap-price').value)||0;if(!name||!price){alert('Completá el nombre y el precio.');return}const editId=document.getElementById('ap-edit-id').value;const existing=editId?PRODUCTS.find(p=>p.id===editId)?.images||[]:[];const prod={id:editId||'prod-'+Date.now(),name,cat:document.getElementById('ap-cat').value,cat2:document.getElementById('ap-cat2').value||'',price,stock:parseInt(document.getElementById('ap-stock').value)||0,emoji:document.getElementById('ap-emoji').value||'🌸',badge:document.getElementById('ap-badge').value||null,desc:document.getElementById('ap-desc').value.trim()||'Fragancia destacada de AURA.',size:document.getElementById('ap-size').value.trim()||'35 ml · EDP',images:await this.getProductImagesFromInputs(existing)};if(editId){const idx=PRODUCTS.findIndex(p=>p.id===editId);if(idx>=0)PRODUCTS[idx]=prod}else PRODUCTS.push(prod);saveProductsLS();this.closeAddProduct();this.renderInventory();this.updatePanelKPIs();renderProducts()},
+  async saveProduct(){const name=document.getElementById('ap-name').value.trim();const price=parseInt(document.getElementById('ap-price').value)||0;if(!name||!price){alert('Completá el nombre y el precio.');return}const editId=document.getElementById('ap-edit-id').value;const productId=editId||'prod-'+Date.now();const existing=editId?PRODUCTS.find(p=>p.id===editId)?.images||[]:[];const prod={id:productId,name,cat:document.getElementById('ap-cat').value,cat2:document.getElementById('ap-cat2').value||'',price,stock:parseInt(document.getElementById('ap-stock').value)||0,emoji:document.getElementById('ap-emoji').value||'🌸',badge:document.getElementById('ap-badge').value||null,desc:document.getElementById('ap-desc').value.trim()||'Fragancia destacada de AURA.',size:document.getElementById('ap-size').value.trim()||'35 ml · EDP',images:await this.getProductImagesFromInputs(productId,existing)};if(editId){const idx=PRODUCTS.findIndex(p=>p.id===editId);if(idx>=0)PRODUCTS[idx]=prod}else PRODUCTS.push(prod);saveProductsLS();this.closeAddProduct();this.renderInventory();this.updatePanelKPIs();renderProducts()},
   deleteProduct(id){if(!confirm('¿Eliminar esta fragancia?'))return;PRODUCTS=PRODUCTS.filter(p=>p.id!==id);saveProductsLS();this.renderInventory();this.updatePanelKPIs();renderProducts()},
   saveWA(){const num=document.getElementById('cfg-wa-num').value.trim();if(!num){alert('Ingresá el número.');return}STORE.waNum=num;STORE.waName=document.getElementById('cfg-wa-name').value.trim()||STORE.waName;config.waNum=STORE.waNum;saveStoreConfig();alert('✓ WhatsApp guardado. Los pedidos irán a +'+num)},
   applyBanner(){STORE.bannerText=document.getElementById('cfg-banner-txt').value;STORE.bannerFg=document.getElementById('cfg-banner-fg').value;STORE.bannerOn=document.getElementById('cfg-banner-on').checked;saveStoreConfig();applyStoreConfig();alert('✓ Banner aplicado.')},
   saveTienda(){STORE.dir=document.getElementById('cfg-dir').value;STORE.hs=document.getElementById('cfg-hs').value;STORE.email=document.getElementById('cfg-email').value;saveStoreConfig();alert('✓ Datos guardados.')},
   applyPortada(){STORE.heroEnc=document.getElementById('cfg-hero-enc').value;STORE.heroTitle=document.getElementById('cfg-hero-title').value;STORE.heroSub=document.getElementById('cfg-hero-sub').value;saveStoreConfig();applyStoreConfig();alert('✓ Portada actualizada.')},
-  async loadHeroBackground(event){const file=event.target.files?.[0];if(!file)return;STORE._pendingHeroBg=await readFileAsDataURL(file);const preview=document.getElementById('hero-bg-preview');preview.style.backgroundImage=`url('${STORE._pendingHeroBg}')`;preview.textContent=''},
+  async loadHeroBackground(event){const file=event.target.files?.[0];if(!file)return;STORE._pendingHeroBg=await SyncManager.uploadImage(file,'store','hero-'+Date.now()+'-'+(file.name||'imagen'));const preview=document.getElementById('hero-bg-preview');preview.style.backgroundImage=`url('${STORE._pendingHeroBg}')`;preview.textContent=''},
   clearHeroBackground(){STORE._pendingHeroBg='';STORE.heroBg='';const preview=document.getElementById('hero-bg-preview');preview.style.backgroundImage='';preview.textContent='Vista previa de fondo principal';saveStoreConfig();applyStoreConfig()},
   applyHeroBackground(){if(typeof STORE._pendingHeroBg!=='undefined')STORE.heroBg=STORE._pendingHeroBg;saveStoreConfig();applyStoreConfig();alert('✓ Fondo de portada actualizado.')},
-  async loadPortalImage(event){const file=event.target.files?.[0];if(!file)return;STORE._pendingPortalImg=await readFileAsDataURL(file);const preview=document.getElementById('portal-img-preview');if(preview){preview.style.backgroundImage=`url('${STORE._pendingPortalImg}')`;preview.textContent=''}},
+  async loadPortalImage(event){const file=event.target.files?.[0];if(!file)return;STORE._pendingPortalImg=await SyncManager.uploadImage(file,'store','portal-'+Date.now()+'-'+(file.name||'imagen'));const preview=document.getElementById('portal-img-preview');if(preview){preview.style.backgroundImage=`url('${STORE._pendingPortalImg}')`;preview.textContent=''}},
   clearPortalImage(){STORE._pendingPortalImg='';STORE.portalImg='';const preview=document.getElementById('portal-img-preview');if(preview){preview.style.backgroundImage='';preview.textContent='Vista previa del panel inicial'}saveStoreConfig();applyStoreConfig()},
   applyPortalImage(){if(typeof STORE._pendingPortalImg!=='undefined')STORE.portalImg=STORE._pendingPortalImg;saveStoreConfig();applyStoreConfig();alert('✓ Imagen del panel inicial actualizada.')},
-  saveNosotros(){const vals={title:document.getElementById('cfg-nos-title').value,p1:document.getElementById('cfg-nos-p1').value,p2:document.getElementById('cfg-nos-p2').value,s1v:document.getElementById('cfg-s1v').value,s1l:document.getElementById('cfg-s1l').value,s2v:document.getElementById('cfg-s2v').value,s2l:document.getElementById('cfg-s2l').value,s3v:document.getElementById('cfg-s3v').value,s3l:document.getElementById('cfg-s3l').value};document.getElementById('nos-modal-title').textContent=vals.title;document.getElementById('nos-modal-p1').textContent=vals.p1;document.getElementById('nos-modal-p2').textContent=vals.p2;['s1','s2','s3'].forEach(k=>{document.getElementById('nos-'+k+'v').textContent=vals[k+'v'];document.getElementById('nos-'+k+'l').textContent=vals[k+'l'];});localStorage.setItem('aura_nosotros',JSON.stringify(vals));alert('✓ Nosotros actualizado.')},
+  saveNosotros(){const vals={title:document.getElementById('cfg-nos-title').value,p1:document.getElementById('cfg-nos-p1').value,p2:document.getElementById('cfg-nos-p2').value,s1v:document.getElementById('cfg-s1v').value,s1l:document.getElementById('cfg-s1l').value,s2v:document.getElementById('cfg-s2v').value,s2l:document.getElementById('cfg-s2l').value,s3v:document.getElementById('cfg-s3v').value,s3l:document.getElementById('cfg-s3l').value};document.getElementById('nos-modal-title').textContent=vals.title;document.getElementById('nos-modal-p1').textContent=vals.p1;document.getElementById('nos-modal-p2').textContent=vals.p2;['s1','s2','s3'].forEach(k=>{document.getElementById('nos-'+k+'v').textContent=vals[k+'v'];document.getElementById('nos-'+k+'l').textContent=vals[k+'l'];});saveJSON('aura_nosotros',vals);alert('✓ Nosotros actualizado.')},
   exportCSV(){const rows=[['Fragancia','Categoría','Subcategoría','Stock','Precio'],...PRODUCTS.map(p=>[p.name,getCategoryName(p.cat),getSubcategoryName(p.cat2),p.stock||0,p.price])];const a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(rows.map(r=>r.join(',')).join('\n'));a.download='aura-inventario.csv';a.click()},
   renderTaxonomy(){const catList=document.getElementById('tax-cat-list');const subList=document.getElementById('tax-sub-list');if(catList)catList.innerHTML=TAXONOMY.categories.map(c=>`<span class="tax-tag">${escapeHtml(c.name)} <button type="button" onclick="Dash.removeCategory('${c.id}')">×</button></span>`).join('');if(subList)subList.innerHTML=TAXONOMY.subcategories.map(s=>`<span class="tax-tag">${escapeHtml(getCategoryName(s.categoryId))}: ${escapeHtml(s.name)} <button type="button" onclick="Dash.removeSubcategory('${s.id}')">×</button></span>`).join('');this.populateProductSelects();renderStoreFilters();this.renderInventory()},
   addCategory(){const input=document.getElementById('tax-new-cat');const name=input.value.trim();if(!name)return;const id=slugify(name);if(TAXONOMY.categories.some(c=>c.id===id)){alert('Esa categoría ya existe.');return}TAXONOMY.categories.push({id,name});saveTaxonomyLS();input.value='';this.renderTaxonomy()},
@@ -1281,6 +1400,7 @@ const App={
 (function(){
   try{const nos=JSON.parse(localStorage.getItem('aura_nosotros')||'null');if(nos){if(nos.title)document.getElementById('nos-modal-title').textContent=nos.title;if(nos.p1)document.getElementById('nos-modal-p1').textContent=nos.p1;if(nos.p2)document.getElementById('nos-modal-p2').textContent=nos.p2;['s1','s2','s3'].forEach(k=>{if(nos[k+'v']){document.getElementById('nos-'+k+'v').textContent=nos[k+'v'];document.getElementById('nos-'+k+'l').textContent=nos[k+'l']||''}})}}catch(e){}
   applyStoreConfig();
+  SyncManager.init();
   renderStoreFilters();
   renderProducts();
   Dash.renderTaxonomy();
