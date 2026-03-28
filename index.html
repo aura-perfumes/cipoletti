@@ -1410,5 +1410,190 @@ const App={
   Dash.updatePanelKPIs();
 })();
 </script>
+
+<script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore-compat.js"></script>
+
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyDPXcIHmLdv8jtfIPMJ8OmQYR8xRbI9Y-Y",
+  authDomain: "auracipoletti.firebaseapp.com",
+  projectId: "auracipoletti",
+  storageBucket: "auracipoletti.firebasestorage.app",
+  messagingSenderId: "276346261251",
+  appId: "1:276346261251:web:515be2d5b0afcaf6d1a336"
+};
+
+if (!firebase.apps.length) {
+  firebase.initializeApp(firebaseConfig);
+}
+const db = firebase.firestore();
+console.log("Firebase conectado");
+
+/* =========================
+   Capa local + sync Firestore
+========================= */
+const LS = {
+  get: k => {
+    try { return JSON.parse(localStorage.getItem('aura_' + k)); }
+    catch(e) { return null; }
+  },
+  set: (k, v) => {
+    try { localStorage.setItem('aura_' + k, JSON.stringify(v)); }
+    catch(e) {}
+  }
+};
+
+window.__syncReady = false;
+
+(function(){
+  const syncKeys = ['products','taxonomy','store','orders','customers','nosotros'];
+  const baseSet = LS.set.bind(LS);
+  const timers = {};
+
+  function safeClone(v){
+    return JSON.parse(JSON.stringify(v));
+  }
+
+  function docRef(key){
+    return db.collection('aura_sync').doc(key);
+  }
+
+  async function pushKey(key){
+    try{
+      await docRef(key).set({
+        value: safeClone(LS.get(key)),
+        updatedAt: new Date().toISOString()
+      });
+      console.log('SYNC OK ->', key);
+      window.__syncReady = true;
+    }catch(err){
+      console.log('SYNC ERROR ->', key, err.message);
+    }
+  }
+
+  LS.set = function(key, value){
+    baseSet(key, value);
+    if(syncKeys.includes(key)){
+      clearTimeout(timers[key]);
+      timers[key] = setTimeout(() => pushKey(key), 250);
+    }
+  };
+
+  window.handleSyncedUpdate = function(key){
+    try{
+      if(key === 'products'){
+        if(typeof renderProducts === 'function') renderProducts();
+        if(typeof Dash !== 'undefined' && typeof Dash.renderInventory === 'function') Dash.renderInventory();
+      }
+      if(key === 'taxonomy'){
+        if(typeof renderProducts === 'function') renderProducts();
+        if(typeof Dash !== 'undefined' && typeof Dash.renderTaxonomy === 'function') Dash.renderTaxonomy();
+      }
+      if(key === 'store'){
+        if(typeof applyStoreConfig === 'function') applyStoreConfig();
+      }
+      if(key === 'orders'){
+        if(typeof Dash !== 'undefined' && typeof Dash.renderPedidos === 'function') Dash.renderPedidos();
+      }
+      if(key === 'customers'){
+        if(typeof Dash !== 'undefined' && typeof Dash.renderClientes === 'function') Dash.renderClientes();
+      }
+      if(key === 'nosotros'){
+        if(typeof renderNosotros === 'function') renderNosotros();
+      }
+      if(typeof Dash !== 'undefined' && typeof Dash.updatePanelKPIs === 'function'){
+        Dash.updatePanelKPIs();
+      }
+    }catch(err){
+      console.log('RENDER SYNC ERROR ->', key, err.message);
+    }
+  };
+
+  async function bootstrapSync(){
+    try{
+      for(const key of syncKeys){
+        const snap = await docRef(key).get();
+
+        if(snap.exists && snap.data() && typeof snap.data().value !== 'undefined'){
+          baseSet(key, snap.data().value);
+        }else if(LS.get(key) !== null){
+          await pushKey(key);
+        }
+
+        docRef(key).onSnapshot(doc => {
+          if(!doc.exists) return;
+
+          const remote = doc.data() ? doc.data().value : null;
+          const local = LS.get(key);
+
+          if(JSON.stringify(remote) !== JSON.stringify(local)){
+            baseSet(key, remote);
+            if(typeof window.handleSyncedUpdate === 'function'){
+              window.handleSyncedUpdate(key);
+            }
+          }
+
+          window.__syncReady = true;
+        });
+      }
+
+      window.__syncReady = true;
+      console.log('SYNC READY');
+    }catch(err){
+      console.log('SYNC BOOTSTRAP ERROR', err.message);
+    }
+  }
+
+  bootstrapSync();
+})();
+
+/* =========================
+   Wrappers de guardado sincronizado
+========================= */
+function getProductsSync(){
+  return LS.get('products') || [];
+}
+function setProductsSync(data){
+  LS.set('products', data || []);
+}
+
+function getTaxonomySync(){
+  return LS.get('taxonomy') || { categories: [], subcategories: [] };
+}
+function setTaxonomySync(data){
+  LS.set('taxonomy', data || { categories: [], subcategories: [] });
+}
+
+function getStoreSync(){
+  return LS.get('store') || {};
+}
+function setStoreSync(data){
+  LS.set('store', data || {});
+}
+
+function getOrdersSync(){
+  return LS.get('orders') || [];
+}
+function setOrdersSync(data){
+  LS.set('orders', data || []);
+}
+
+function getCustomersSync(){
+  return LS.get('customers') || [];
+}
+function setCustomersSync(data){
+  LS.set('customers', data || []);
+}
+
+function getNosotrosSync(){
+  return LS.get('nosotros') || {};
+}
+function setNosotrosSync(data){
+  LS.set('nosotros', data || {});
+}
+</script>
+
 </body>
 </html>
