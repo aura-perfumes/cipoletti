@@ -408,9 +408,13 @@ input,textarea,select{font-family:inherit}
 .badge.blue{background:#dbeafe;color:#1e40af}
 .badge.gray{background:#f1f5f9;color:var(--muted)}
 /* Action links */
-.tbl-action{background:none;border:none;color:var(--muted);font-size:.72rem;cursor:pointer;padding:0 .35rem;transition:color var(--trans)}
-.tbl-action:hover{color:var(--text)}
-.tbl-action.del:hover{color:var(--red)}
+.tbl-action{background:none;border:1px solid var(--border);border-radius:7px;color:var(--muted);font-size:.68rem;font-weight:600;cursor:pointer;padding:.28rem .6rem;transition:all var(--trans);white-space:nowrap}
+.tbl-action:hover{color:var(--text);border-color:#94a3b8;background:#f8fafc}
+.tbl-action.del{margin-left:.3rem}
+.tbl-action.del:hover{color:#fff;border-color:var(--red);background:var(--red)}
+.tbl-actions-cell{white-space:nowrap}
+/* Modal footer */
+.ap-ftr{padding:1rem 1.4rem;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:.75rem;background:#f8fafc;border-radius:0 0 16px 16px}
 /* Progress bar */
 .stock-bar{width:80px;height:5px;background:#f1f5f9;border-radius:99px;overflow:hidden;display:inline-block;vertical-align:middle;margin-left:.5rem}
 .stock-bar-fill{height:100%;border-radius:99px;background:var(--green)}
@@ -701,7 +705,7 @@ input,textarea,select{font-family:inherit}
         </div>
         <div class="table-wrap">
           <table class="data-table">
-            <thead><tr><th>Nº Pedido</th><th>Cliente</th><th>Productos</th><th>Total</th><th>Envío</th><th>Fecha</th><th>Estado</th></tr></thead>
+            <thead><tr><th>Nº Pedido</th><th>Cliente</th><th>Productos</th><th>Total</th><th>Envío</th><th>Fecha</th><th>Estado</th><th>Acciones</th></tr></thead>
             <tbody id="ped-tbody"></tbody>
           </table>
         </div>
@@ -724,7 +728,7 @@ input,textarea,select{font-family:inherit}
         </div>
         <div class="table-wrap">
           <table class="data-table">
-            <thead><tr><th>Cliente</th><th>Teléfono</th><th>Pedidos</th><th>Total gastado</th><th>Último pedido</th><th>Segmento</th></tr></thead>
+            <thead><tr><th>Cliente</th><th>Teléfono</th><th>Pedidos</th><th>Total gastado</th><th>Último pedido</th><th>Segmento</th><th>Acciones</th></tr></thead>
             <tbody id="cli-tbody"></tbody>
           </table>
         </div>
@@ -1026,6 +1030,109 @@ input,textarea,select{font-family:inherit}
   </div>
 </div>
 
+<!-- ══ EDIT ORDER MODAL ════════════════════════ -->
+<div class="ap-overlay" id="eo-modal" onclick="if(event.target===this)Dash.closeEditOrder()">
+  <div class="ap-modal">
+    <div class="ap-hdr">
+      <div class="ap-hdr-title display">Editar Pedido</div>
+      <button class="ap-x" onclick="Dash.closeEditOrder()">✕</button>
+    </div>
+    <div class="ap-body">
+      <input type="hidden" id="eo-id"/>
+      <div class="ap-grid">
+        <div>
+          <label class="config-label">Nombre del cliente *</label>
+          <input class="config-input" type="text" id="eo-name" placeholder="Nombre completo"/>
+        </div>
+        <div>
+          <label class="config-label">Teléfono</label>
+          <input class="config-input" type="text" id="eo-phone" placeholder="Ej: 299..."/>
+        </div>
+        <div class="ap-full">
+          <label class="config-label">Productos (Nombre x cantidad, separados por coma)</label>
+          <input class="config-input" type="text" id="eo-products" placeholder="Ej: Rose Éternelle x2, Noir x1"/>
+        </div>
+        <div>
+          <label class="config-label">Total ($)</label>
+          <input class="config-input" type="number" id="eo-total" placeholder="0"/>
+        </div>
+        <div>
+          <label class="config-label">Envío ($)</label>
+          <input class="config-input" type="number" id="eo-delivery" placeholder="0"/>
+        </div>
+        <div>
+          <label class="config-label">Fecha</label>
+          <input class="config-input" type="datetime-local" id="eo-date"/>
+        </div>
+        <div>
+          <label class="config-label">Estado</label>
+          <select class="config-input" id="eo-status">
+            <option value="Pendiente">Pendiente</option>
+            <option value="Confirmado">Confirmado</option>
+            <option value="En preparación">En preparación</option>
+            <option value="Enviado">Enviado</option>
+            <option value="Entregado">Entregado</option>
+            <option value="Cancelado">Cancelado</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="ap-ftr">
+      <button class="btn-outline" onclick="Dash.closeEditOrder()">Cancelar</button>
+      <button class="btn-dark" onclick="Dash.saveOrder()">Guardar cambios</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ EDIT CUSTOMER MODAL ════════════════════ -->
+<div class="ap-overlay" id="ec-modal" onclick="if(event.target===this)Dash.closeEditCustomer()">
+  <div class="ap-modal">
+    <div class="ap-hdr">
+      <div class="ap-hdr-title display">Editar Cliente</div>
+      <button class="ap-x" onclick="Dash.closeEditCustomer()">✕</button>
+    </div>
+    <div class="ap-body">
+      <input type="hidden" id="ec-orig-name"/>
+      <div class="ap-grid">
+        <div>
+          <label class="config-label">Nombre *</label>
+          <input class="config-input" type="text" id="ec-name" placeholder="Nombre completo"/>
+        </div>
+        <div>
+          <label class="config-label">Teléfono</label>
+          <input class="config-input" type="text" id="ec-phone" placeholder="Ej: 299..."/>
+        </div>
+        <div>
+          <label class="config-label">Cantidad de pedidos</label>
+          <input class="config-input" type="number" id="ec-orders" placeholder="0"/>
+        </div>
+        <div>
+          <label class="config-label">Total gastado ($)</label>
+          <input class="config-input" type="number" id="ec-spent" placeholder="0"/>
+        </div>
+        <div>
+          <label class="config-label">Último pedido</label>
+          <input class="config-input" type="datetime-local" id="ec-last"/>
+        </div>
+        <div>
+          <label class="config-label">Segmento</label>
+          <select class="config-input" id="ec-segment">
+            <option value="Activo">Activo</option>
+            <option value="VIP">VIP</option>
+            <option value="Frecuente">Frecuente</option>
+            <option value="Nuevo">Nuevo</option>
+            <option value="Inactivo">Inactivo</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="ap-ftr">
+      <button class="btn-outline" onclick="Dash.closeEditCustomer()">Cancelar</button>
+      <button class="btn-dark" onclick="Dash.saveCustomer()">Guardar cambios</button>
+    </div>
+  </div>
+</div>
+
 <!-- ══ ADD PRODUCT MODAL ════════════════════════ -->
 <div class="ap-overlay" id="ap-modal" onclick="if(event.target===this)Dash.closeAddProduct()">
   <div class="ap-modal">
@@ -1230,9 +1337,9 @@ const Dash={
   renderInventoryFilters(){const row=document.getElementById('inv-filter-row');if(!row)return;row.innerHTML=`<button class="fc ${invStatusFilter==='todos'?'active':''}" data-f="todos" onclick="Dash.invFilter(this)">Todos</button><button class="fc ${invStatusFilter==='stock'?'active':''}" data-f="stock" onclick="Dash.invFilter(this)">En stock</button><button class="fc ${invStatusFilter==='bajo'?'active':''}" data-f="bajo" onclick="Dash.invFilter(this)">Stock bajo</button><button class="fc ${invStatusFilter==='agotado'?'active':''}" data-f="agotado" onclick="Dash.invFilter(this)">Agotado</button>`+TAXONOMY.categories.map(c=>`<button class="fc ${invStatusFilter===c.id?'active':''}" data-f="${c.id}" onclick="Dash.invFilter(this)">${escapeHtml(c.name)}</button>`).join('')},
   invFilter(btn){document.querySelectorAll('#inv-filter-row .fc').forEach(b=>b.classList.remove('active'));btn.classList.add('active');invStatusFilter=btn.dataset.f;this.renderInventory()},
   filterInventory(val){invTextFilter=val;this.renderInventory()},
-  renderPedidos(){const t=document.getElementById('ped-tbody');if(!t)return;const q=(document.getElementById('ped-search')?.value||'').toLowerCase().trim();let list=ORDERS.filter(o=>!q||[o.id,o.customerName,o.phone,o.address,o.items.map(i=>i.name).join(' ')].join(' ').toLowerCase().includes(q));if(!list.length){t.innerHTML='<tr><td colspan="7" class="tbl-empty">0 de 0 pedidos</td></tr>';return}t.innerHTML=list.map(o=>`<tr><td><strong>${o.id}</strong></td><td>${escapeHtml(o.customerName)}<div class="tbl-prod-sub">${escapeHtml(o.phone||'Sin teléfono')}</div></td><td>${escapeHtml(o.items.map(i=>`${i.name} x${i.qty}`).join(', '))}</td><td>$${Number(o.total).toLocaleString('es-AR')}</td><td>${o.delivery?`$${Number(o.delivery).toLocaleString('es-AR')}`:'Retiro / sin cálculo'}</td><td>${formatDateTime(o.date)}</td><td><span class="badge blue">${escapeHtml(o.status)}</span></td></tr>`).join('')},
+  renderPedidos(){const t=document.getElementById('ped-tbody');if(!t)return;const q=(document.getElementById('ped-search')?.value||'').toLowerCase().trim();let list=ORDERS.filter(o=>!q||[o.id,o.customerName,o.phone,o.address,o.items.map(i=>i.name).join(' ')].join(' ').toLowerCase().includes(q));if(!list.length){t.innerHTML='<tr><td colspan="8" class="tbl-empty">0 de 0 pedidos</td></tr>';return}t.innerHTML=list.map(o=>`<tr><td><strong>${o.id}</strong></td><td>${escapeHtml(o.customerName)}<div class="tbl-prod-sub">${escapeHtml(o.phone||'Sin teléfono')}</div></td><td>${escapeHtml(o.items.map(i=>`${i.name} x${i.qty}`).join(', '))}</td><td>$${Number(o.total).toLocaleString('es-AR')}</td><td>${o.delivery?`$${Number(o.delivery).toLocaleString('es-AR')}`:'Retiro / sin cálculo'}</td><td>${formatDateTime(o.date)}</td><td><span class="badge blue">${escapeHtml(o.status)}</span></td><td class="tbl-actions-cell"><button class="tbl-action" onclick="Dash.editOrder('${o.id}')">✏️ Editar</button><button class="tbl-action del" onclick="Dash.deleteOrder('${o.id}')">🗑 Eliminar</button></td></tr>`).join('')},
   filterPedidos(){this.renderPedidos()},
-  renderClientes(){const t=document.getElementById('cli-tbody');if(!t)return;const q=(document.getElementById('cli-search')?.value||'').toLowerCase().trim();let list=CUSTOMERS.filter(c=>!q||[c.name,c.phone,c.segment].join(' ').toLowerCase().includes(q));if(!list.length){t.innerHTML='<tr><td colspan="6" class="tbl-empty">0 clientes</td></tr>';return}t.innerHTML=list.map(c=>`<tr><td><strong>${escapeHtml(c.name)}</strong></td><td>${escapeHtml(c.phone||'Sin teléfono')}</td><td>${c.orders||0}</td><td>$${Number(c.totalSpent||0).toLocaleString('es-AR')}</td><td>${c.lastOrder?formatDateTime(c.lastOrder):'—'}</td><td><span class="badge ${c.segment==='VIP'?'green':'gray'}">${escapeHtml(c.segment||'Activo')}</span></td></tr>`).join('')},
+  renderClientes(){const t=document.getElementById('cli-tbody');if(!t)return;const q=(document.getElementById('cli-search')?.value||'').toLowerCase().trim();let list=CUSTOMERS.filter(c=>!q||[c.name,c.phone,c.segment].join(' ').toLowerCase().includes(q));if(!list.length){t.innerHTML='<tr><td colspan="7" class="tbl-empty">0 clientes</td></tr>';return}t.innerHTML=list.map(c=>`<tr><td><strong>${escapeHtml(c.name)}</strong></td><td>${escapeHtml(c.phone||'Sin teléfono')}</td><td>${c.orders||0}</td><td>$${Number(c.totalSpent||0).toLocaleString('es-AR')}</td><td>${c.lastOrder?formatDateTime(c.lastOrder):'—'}</td><td><span class="badge ${c.segment==='VIP'?'green':'gray'}">${escapeHtml(c.segment||'Activo')}</span></td><td class="tbl-actions-cell"><button class="tbl-action" onclick="Dash.editCustomer('${escapeHtml(c.name).replace(/'/g,"\\'")}')">✏️ Editar</button><button class="tbl-action del" onclick="Dash.deleteCustomer('${escapeHtml(c.name).replace(/'/g,"\\'")}')">🗑 Eliminar</button></td></tr>`).join('')},
   filterClientes(){this.renderClientes()},
   renderHeatmap(){const box=document.getElementById('heatmap-grid');if(!box)return;const labels={hero:'Hero / portada',filters:'Filtros de catálogo',productCard:'Fichas de producto',addToCart:'Botones agregar',cart:'Carrito',whatsapp:'CTA WhatsApp',nav:'Navegación',about:'Nosotros / contacto'};const total=Object.values(HEATMAP).reduce((a,b)=>a+b,0)||1;box.innerHTML=Object.entries(labels).map(([k,label])=>{const val=HEATMAP[k]||0;const intensity=Math.max(.08,Math.min(.95,val/Math.max(...Object.values(HEATMAP),1)));const pct=Math.round((val/total)*100);return `<div class="heat-cell" style="--intensity:${intensity}"><div class="heat-zone">${label}</div><div class="heat-value">${val}</div><div class="heat-sub">${pct}% de interacción</div></div>`}).join('')},
   initAnalytics(){const lineCtx=document.getElementById('anal-line-chart');const donutCtx=document.getElementById('anal-donut-chart');const revenue=getRevenueSeries();if(lineCtx){if(analLineChart)analLineChart.destroy();analLineChart=new Chart(lineCtx,{type:'line',data:{labels:revenue.labels,datasets:[{data:revenue.data,borderColor:'#10B981',backgroundColor:'rgba(16,185,129,.08)',tension:.35,pointRadius:4,pointBackgroundColor:'#10B981',fill:true}]},options:{plugins:{legend:{display:false}},scales:{x:{grid:{display:false},ticks:{color:'#94a3b8',font:{size:10}}},y:{grid:{color:'rgba(0,0,0,.05)'},ticks:{color:'#94a3b8',font:{size:10},callback:v=>'$'+Number(v).toLocaleString('es-AR')}}},responsive:true,maintainAspectRatio:true}})}if(donutCtx){const cats={};PRODUCTS.forEach(p=>{const n=getCategoryName(p.cat);cats[n]=(cats[n]||0)+(p.stock||0)});if(analDonutChart)analDonutChart.destroy();analDonutChart=new Chart(donutCtx,{type:'doughnut',data:{labels:Object.keys(cats),datasets:[{data:Object.values(cats),backgroundColor:['#F87171','#92400e','#8b5cf6','#10B981','#0ea5e9','#f59e0b'],borderWidth:0}]},options:{plugins:{legend:{position:'right',labels:{font:{size:11},color:'#334155',boxWidth:14}}},responsive:true,maintainAspectRatio:true,cutout:'60%'}})}const totalVentas=ORDERS.reduce((s,o)=>s+o.total,0);const ticket=ORDERS.length?Math.round(totalVentas/ORDERS.length):0;document.getElementById('an-ticket').textContent='$'+ticket.toLocaleString('es-AR');document.getElementById('an-ticket-sub').textContent=ORDERS.length?`${ORDERS.length} pedidos registrados`:'Sin datos aún';document.getElementById('an-pedmes').textContent=ORDERS.length;document.getElementById('an-pedmes-sub').textContent=ORDERS.length?'Pedidos acumulados':'Sin datos aún';document.getElementById('an-clientes').textContent=CUSTOMERS.length;document.getElementById('an-agotados').textContent=PRODUCTS.filter(p=>(p.stock||0)===0).length;this.renderHeatmap()},
@@ -1262,7 +1369,107 @@ const Dash={
   addCategory(){const input=document.getElementById('tax-new-cat');const name=input.value.trim();if(!name)return;const id=slugify(name);if(TAXONOMY.categories.some(c=>c.id===id)){alert('Esa categoría ya existe.');return}TAXONOMY.categories.push({id,name});saveTaxonomyLS();input.value='';this.renderTaxonomy()},
   removeCategory(id){if(PRODUCTS.some(p=>p.cat===id)){alert('No podés eliminar una categoría que está en uso por productos.');return}TAXONOMY.categories=TAXONOMY.categories.filter(c=>c.id!==id);TAXONOMY.subcategories=TAXONOMY.subcategories.filter(s=>s.categoryId!==id);saveTaxonomyLS();this.renderTaxonomy()},
   addSubcategory(){const parent=document.getElementById('tax-parent-cat').value;const input=document.getElementById('tax-new-sub');const name=input.value.trim();if(!parent||!name)return;const id=slugify(name);if(TAXONOMY.subcategories.some(s=>s.id===id&&s.categoryId===parent)){alert('Esa subcategoría ya existe en la categoría elegida.');return}TAXONOMY.subcategories.push({id,categoryId:parent,name});saveTaxonomyLS();input.value='';this.renderTaxonomy()},
-  removeSubcategory(id){if(PRODUCTS.some(p=>p.cat2===id)){alert('No podés eliminar una subcategoría que está en uso por productos.');return}TAXONOMY.subcategories=TAXONOMY.subcategories.filter(s=>s.id!==id);saveTaxonomyLS();this.renderTaxonomy()}
+  removeSubcategory(id){if(PRODUCTS.some(p=>p.cat2===id)){alert('No podés eliminar una subcategoría que está en uso por productos.');return}TAXONOMY.subcategories=TAXONOMY.subcategories.filter(s=>s.id!==id);saveTaxonomyLS();this.renderTaxonomy()},
+
+  /* ─── ORDERS: EDIT & DELETE ─── */
+  editOrder(id){
+    const o=ORDERS.find(x=>x.id===id);if(!o)return;
+    document.getElementById('eo-id').value=o.id;
+    document.getElementById('eo-name').value=o.customerName||'';
+    document.getElementById('eo-phone').value=o.phone||'';
+    document.getElementById('eo-products').value=o.items.map(i=>`${i.name} x${i.qty}`).join(', ');
+    document.getElementById('eo-total').value=o.total||0;
+    document.getElementById('eo-delivery').value=o.delivery||0;
+    document.getElementById('eo-date').value=o.date?(o.date.length>10?o.date.substring(0,16):o.date):'';
+    document.getElementById('eo-status').value=o.status||'Pendiente';
+    document.getElementById('eo-modal').classList.add('active');
+  },
+  saveOrder(){
+    const id=document.getElementById('eo-id').value;
+    const idx=ORDERS.findIndex(x=>x.id===id);if(idx<0)return;
+    const oldOrder=ORDERS[idx];
+    const newName=document.getElementById('eo-name').value.trim();
+    const newPhone=document.getElementById('eo-phone').value.trim();
+    const newTotal=parseFloat(document.getElementById('eo-total').value)||0;
+    const newDelivery=parseFloat(document.getElementById('eo-delivery').value)||0;
+    const newDate=document.getElementById('eo-date').value||oldOrder.date;
+    const newStatus=document.getElementById('eo-status').value;
+    const rawProducts=document.getElementById('eo-products').value;
+    const newItems=rawProducts.split(',').map(s=>{const m=s.trim().match(/^(.*?)\s*x(\d+)$/i);return m?{name:m[1].trim(),qty:parseInt(m[2])||1,price:0}:{name:s.trim(),qty:1,price:0}}).filter(i=>i.name);
+    const oldName=oldOrder.customerName;
+    ORDERS[idx]={...oldOrder,customerName:newName,phone:newPhone,items:newItems.length?newItems:oldOrder.items,total:newTotal,delivery:newDelivery,date:newDate,status:newStatus};
+    saveOrdersLS();
+    /* recalc old and new customer if name changed */
+    this._recalcCustomer(oldName);
+    if(newName&&newName!==oldName)this._recalcCustomer(newName);
+    saveCustomersLS();
+    this.closeEditOrder();
+    this.renderPedidos();
+    this.renderClientes();
+    this.updatePanelKPIs();
+  },
+  deleteOrder(id){
+    const o=ORDERS.find(x=>x.id===id);if(!o)return;
+    if(!confirm(`¿Eliminar el pedido ${o.id} de ${o.customerName}? Esta acción no se puede deshacer.`))return;
+    const customerName=o.customerName;
+    ORDERS=ORDERS.filter(x=>x.id!==id);
+    saveOrdersLS();
+    this._recalcCustomer(customerName);
+    saveCustomersLS();
+    this.renderPedidos();
+    this.renderClientes();
+    this.updatePanelKPIs();
+  },
+  closeEditOrder(){document.getElementById('eo-modal').classList.remove('active')},
+
+  /* ─── CUSTOMERS: EDIT & DELETE ─── */
+  editCustomer(name){
+    const c=CUSTOMERS.find(x=>x.name===name);if(!c)return;
+    document.getElementById('ec-orig-name').value=c.name;
+    document.getElementById('ec-name').value=c.name;
+    document.getElementById('ec-phone').value=c.phone||'';
+    document.getElementById('ec-orders').value=c.orders||0;
+    document.getElementById('ec-spent').value=c.totalSpent||0;
+    document.getElementById('ec-last').value=c.lastOrder?(c.lastOrder.length>10?c.lastOrder.substring(0,16):c.lastOrder):'';
+    document.getElementById('ec-segment').value=c.segment||'Activo';
+    document.getElementById('ec-modal').classList.add('active');
+  },
+  saveCustomer(){
+    const origName=document.getElementById('ec-orig-name').value;
+    const idx=CUSTOMERS.findIndex(x=>x.name===origName);if(idx<0)return;
+    const newName=document.getElementById('ec-name').value.trim()||origName;
+    const newPhone=document.getElementById('ec-phone').value.trim();
+    const newOrders=parseInt(document.getElementById('ec-orders').value)||0;
+    const newSpent=parseFloat(document.getElementById('ec-spent').value)||0;
+    const newLast=document.getElementById('ec-last').value||'';
+    const newSegment=document.getElementById('ec-segment').value;
+    /* if name changed, update all linked orders */
+    if(newName!==origName){ORDERS.forEach(o=>{if(o.customerName===origName)o.customerName=newName});saveOrdersLS();}
+    CUSTOMERS[idx]={...CUSTOMERS[idx],name:newName,phone:newPhone,orders:newOrders,totalSpent:newSpent,lastOrder:newLast,segment:newSegment};
+    saveCustomersLS();
+    this.closeEditCustomer();
+    this.renderClientes();
+    this.renderPedidos();
+  },
+  deleteCustomer(name){
+    if(!confirm(`¿Eliminar al cliente "${name}"? Sus pedidos NO se eliminarán pero quedarán sin cliente vinculado.`))return;
+    CUSTOMERS=CUSTOMERS.filter(c=>c.name!==name);
+    saveCustomersLS();
+    this.renderClientes();
+    this.updatePanelKPIs();
+  },
+  closeEditCustomer(){document.getElementById('ec-modal').classList.remove('active')},
+
+  /* helper: recalculate a customer's stats from ORDERS */
+  _recalcCustomer(name){
+    if(!name)return;
+    const related=ORDERS.filter(o=>o.customerName===name);
+    const cidx=CUSTOMERS.findIndex(c=>c.name===name);
+    if(cidx<0)return;
+    const totalSpent=related.reduce((s,o)=>s+(o.total||0),0);
+    const lastOrder=related.length?related.slice().sort((a,b)=>new Date(b.date)-new Date(a.date))[0].date:'';
+    CUSTOMERS[cidx]={...CUSTOMERS[cidx],orders:related.length,totalSpent,lastOrder};
+  }
 };
 
 function applyStoreConfig(){document.getElementById('cfg-wa-num').value=STORE.waNum;document.getElementById('cfg-wa-name').value=STORE.waName;document.getElementById('cfg-banner-txt').value=STORE.bannerText;document.getElementById('cfg-banner-fg').value=STORE.bannerFg;document.getElementById('cfg-banner-on').checked=!!STORE.bannerOn;document.getElementById('cfg-dir').value=STORE.dir;document.getElementById('cfg-hs').value=STORE.hs;document.getElementById('cfg-email').value=STORE.email;document.getElementById('cfg-hero-enc').value=STORE.heroEnc;document.getElementById('cfg-hero-title').value=STORE.heroTitle;document.getElementById('cfg-hero-sub').value=STORE.heroSub;const ann=document.getElementById('store-announce');ann.textContent=STORE.heroEnc||STORE.bannerText;ann.style.color=STORE.bannerFg;ann.style.display=STORE.bannerOn?'':'none';document.getElementById('store-hero-title').innerHTML=buildHeroTitle(STORE.heroTitle);document.getElementById('store-hero-sub').textContent=STORE.heroSub;const hero=document.getElementById('store-hero');if(STORE.heroBg){hero.style.setProperty('--hero-overlay',`url('${STORE.heroBg}')`);const preview=document.getElementById('hero-bg-preview');if(preview){preview.style.backgroundImage=`url('${STORE.heroBg}')`;preview.textContent=''}}else{hero.style.removeProperty('--hero-overlay');const preview=document.getElementById('hero-bg-preview');if(preview){preview.style.backgroundImage='';preview.textContent='Vista previa de fondo principal'}}const portal=document.getElementById('portal-media');const portalPreview=document.getElementById('portal-img-preview');if(portal){if(STORE.portalImg){portal.classList.add('has-image');portal.innerHTML=`<img src="${STORE.portalImg}" alt="Imagen principal del portal">`;if(portalPreview){portalPreview.style.backgroundImage=`url('${STORE.portalImg}')`;portalPreview.textContent=''}}else{portal.classList.remove('has-image');portal.innerHTML='<span class="portal-bottle-fallback">🫙</span>';if(portalPreview){portalPreview.style.backgroundImage='';portalPreview.textContent='Vista previa del panel inicial'}}}config.waNum=STORE.waNum}
