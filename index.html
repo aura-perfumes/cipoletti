@@ -1387,41 +1387,96 @@ const App={
   closeProductDetail(){document.getElementById('detail-modal').classList.remove('active')}
 };
 
-(async function(){
-  applyNosotrosContent(loadNosotros());
-  applyStoreConfig();
-  renderStoreFilters();
-  renderProducts();
-  Dash.renderTaxonomy();
-  Dash.updatePanelKPIs();
-  document.getElementById('ap-cat')?.addEventListener('change',()=>Dash.syncSubcategorySelect());
-  document.querySelectorAll('[data-click-zone]').forEach(el=>el.addEventListener('click',e=>trackZone(e.currentTarget.dataset.clickZone)));
-  document.querySelector('.store-nav')?.addEventListener('click',()=>trackZone('nav'));
-  document.getElementById('store-hero')?.addEventListener('click',()=>trackZone('hero'));
-  document.getElementById('btn-wa-cart')?.addEventListener('click',()=>trackZone('whatsapp'));
-  await bootstrapCloud();
-  applyStoreConfig();
-  renderStoreFilters();
-  renderProducts();
-  Dash.renderTaxonomy();
-  Dash.renderInventory();
-  Dash.renderPedidos();
-  Dash.renderClientes();
-  Dash.updatePanelKPIs();
-})();
 </script>
 
+<script>
+/* =========================
+   Guardado local reemplazado por sync
+========================= */
+function saveProductsLS(){ LS.set('products', PRODUCTS); }
+function saveOrdersLS(){ LS.set('orders', ORDERS); }
+function saveCustomersLS(){ LS.set('customers', CUSTOMERS); }
+function saveTaxonomyLS(){ LS.set('taxonomy', TAXONOMY); }
+function saveHeatmapLS(){ LS.set('heatmap', HEATMAP); }
+function saveStoreConfig(){ LS.set('store', STORE); }
+
+(function(){
+  const prevLoadNosotros = window.loadNosotros;
+  window.loadNosotros = function(){
+    try{
+      const vals = LS.get('nosotros') || {
+        title:'Aura Maison',
+        subtitle:'Elegancia, presencia y detalle en cada fragancia.',
+        text1:'En AURA seleccionamos fragancias con carácter, identidad y presencia. Cada perfume fue elegido para ofrecer una experiencia sofisticada, memorable y distinta.',
+        text2:'Nuestra propuesta combina estética, atención cercana y una curaduría enfocada en perfumes árabes, nicho y opciones versátiles para todos los días.',
+        stat1:'500+',
+        stat1Label:'Clientes',
+        stat2:'100+',
+        stat2Label:'Fragancias',
+        stat3:'24/7',
+        stat3Label:'Atención'
+      };
+
+      const byId = id => document.getElementById(id);
+      if(byId('nos-title')) byId('nos-title').value = vals.title || '';
+      if(byId('nos-subtitle')) byId('nos-subtitle').value = vals.subtitle || '';
+      if(byId('nos-text1')) byId('nos-text1').value = vals.text1 || '';
+      if(byId('nos-text2')) byId('nos-text2').value = vals.text2 || '';
+      if(byId('nos-stat1')) byId('nos-stat1').value = vals.stat1 || '';
+      if(byId('nos-stat1Label')) byId('nos-stat1Label').value = vals.stat1Label || '';
+      if(byId('nos-stat2')) byId('nos-stat2').value = vals.stat2 || '';
+      if(byId('nos-stat2Label')) byId('nos-stat2Label').value = vals.stat2Label || '';
+      if(byId('nos-stat3')) byId('nos-stat3').value = vals.stat3 || '';
+      if(byId('nos-stat3Label')) byId('nos-stat3Label').value = vals.stat3Label || '';
+
+      if(typeof window.renderNosotrosPreview === 'function'){
+        window.renderNosotrosPreview(vals);
+      }
+      return vals;
+    }catch(e){
+      if(typeof prevLoadNosotros === 'function') return prevLoadNosotros();
+      return {};
+    }
+  };
+
+  const prevSaveNosotros = window.saveNosotros;
+  window.saveNosotros = function(){
+    try{
+      const byId = id => document.getElementById(id);
+      const vals = {
+        title: byId('nos-title') ? byId('nos-title').value.trim() : '',
+        subtitle: byId('nos-subtitle') ? byId('nos-subtitle').value.trim() : '',
+        text1: byId('nos-text1') ? byId('nos-text1').value.trim() : '',
+        text2: byId('nos-text2') ? byId('nos-text2').value.trim() : '',
+        stat1: byId('nos-stat1') ? byId('nos-stat1').value.trim() : '',
+        stat1Label: byId('nos-stat1Label') ? byId('nos-stat1Label').value.trim() : '',
+        stat2: byId('nos-stat2') ? byId('nos-stat2').value.trim() : '',
+        stat2Label: byId('nos-stat2Label') ? byId('nos-stat2Label').value.trim() : '',
+        stat3: byId('nos-stat3') ? byId('nos-stat3').value.trim() : '',
+        stat3Label: byId('nos-stat3Label') ? byId('nos-stat3Label').value.trim() : ''
+      };
+
+      LS.set('nosotros', vals);
+
+      if(typeof window.renderNosotrosPreview === 'function'){
+        window.renderNosotrosPreview(vals);
+      }
+      if(typeof toast === 'function') toast('Sección Nosotros guardada');
+    }catch(e){
+      if(typeof prevSaveNosotros === 'function') prevSaveNosotros();
+    }
+  };
+})();
 </script>
 
 <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore-compat.js"></script>
 
 <script>
 const firebaseConfig = {
   apiKey: "AIzaSyDPXcIHmLdv8jtfIPMJ8OmQYR8xRbI9Y-Y",
   authDomain: "auracipoletti.firebaseapp.com",
-  databaseURL: "https://auracipoletti-default-rtdb.firebaseio.com",
   projectId: "auracipoletti",
   storageBucket: "auracipoletti.firebasestorage.app",
   messagingSenderId: "276346261251",
@@ -1431,11 +1486,11 @@ const firebaseConfig = {
 if (!firebase.apps.length) {
   firebase.initializeApp(firebaseConfig);
 }
-const rtdb = firebase.database();
-console.log("Realtime Database conectada");
+const db = firebase.firestore();
+console.log("Firebase conectado");
 
 /* =========================
-   Capa local + sync RTDB
+   Capa local + sync Firestore
 ========================= */
 const LS = {
   get: k => {
@@ -1449,95 +1504,130 @@ const LS = {
 };
 
 window.__syncReady = false;
+window.__syncDb = null;
 
 (function(){
-  const syncKeys = ['config','products','metrics'];
-  const baseSet = LS.set.bind(LS);
-  const timers = {};
+  try{
+    window.__syncDb = db;
 
-  function safeClone(v){
-    return JSON.parse(JSON.stringify(v));
-  }
+    const baseSet = LS.set.bind(LS);
+    const syncKeys = ['products','taxonomy','store','orders','customers','nosotros','heatmap'];
+    const timers = {};
 
-  function refPath(key){
-    return rtdb.ref(key);
-  }
-
-  async function pushKey(key){
-    try{
-      await refPath(key).set(safeClone(LS.get(key)));
-      console.log('SYNC OK ->', key);
-      window.__syncReady = true;
-    }catch(err){
-      console.log('SYNC ERROR ->', key, err.message);
+    function docRef(key){
+      return db.collection('aura_sync').doc(key);
     }
-  }
 
-  LS.set = function(key, value){
-    baseSet(key, value);
-    if(syncKeys.includes(key)){
-      clearTimeout(timers[key]);
-      timers[key] = setTimeout(() => pushKey(key), 250);
+    function safeClone(v){
+      return JSON.parse(JSON.stringify(v));
     }
-  };
 
-  window.handleSyncedUpdate = function(key){
-    try{
-      if(key === 'products'){
-        if(typeof renderProducts === 'function') renderProducts();
-        if(typeof Dash !== 'undefined' && typeof Dash.renderInventory === 'function') Dash.renderInventory();
-        if(typeof Dash !== 'undefined' && typeof Dash.renderProductos === 'function') Dash.renderProductos();
+    async function pushKey(key){
+      if(!window.__syncDb) return;
+      try{
+        await docRef(key).set({
+          value: safeClone(LS.get(key)),
+          updatedAt: new Date().toISOString()
+        });
+        window.__syncReady = true;
+        console.log('SYNC OK ->', key);
+      }catch(err){
+        console.log('Sync push error', key, err.message);
       }
-
-      if(key === 'config'){
-        if(typeof applyStoreConfig === 'function') applyStoreConfig();
-        if(typeof loadConfig === 'function') loadConfig();
-      }
-
-      if(key === 'metrics'){
-        if(typeof Dash !== 'undefined' && typeof Dash.updatePanelKPIs === 'function'){
-          Dash.updatePanelKPIs();
-        }
-      }
-    }catch(err){
-      console.log('RENDER SYNC ERROR ->', key, err.message);
     }
-  };
 
-  async function bootstrapSync(){
-    try{
-      for(const key of syncKeys){
-        const snap = await refPath(key).get();
+    LS.set = function(key, value){
+      baseSet(key, value);
+      if(syncKeys.includes(key)){
+        clearTimeout(timers[key]);
+        timers[key] = setTimeout(() => pushKey(key), 250);
+      }
+    };
 
-        if(snap.exists()){
-          baseSet(key, snap.val());
-        } else if(LS.get(key) !== null) {
-          await pushKey(key);
+    window.handleSyncedUpdate = function(key){
+      try{
+        if(key === 'products'){
+          if(typeof renderProducts === 'function') renderProducts();
+          if(typeof Dash !== 'undefined' && typeof Dash.renderInventory === 'function') Dash.renderInventory();
         }
 
-        refPath(key).on('value', snapshot => {
-          const remote = snapshot.exists() ? snapshot.val() : null;
-          const local = LS.get(key);
+        if(key === 'taxonomy'){
+          if(typeof renderStoreFilters === 'function') renderStoreFilters();
+          if(typeof renderProducts === 'function') renderProducts();
+          if(typeof Dash !== 'undefined' && typeof Dash.renderTaxonomy === 'function') Dash.renderTaxonomy();
+        }
 
-          if(JSON.stringify(remote) !== JSON.stringify(local)){
-            baseSet(key, remote);
-            if(typeof window.handleSyncedUpdate === 'function'){
-              window.handleSyncedUpdate(key);
-            }
+        if(key === 'store'){
+          if(typeof applyStoreConfig === 'function') applyStoreConfig();
+          if(typeof Dash !== 'undefined' && typeof Dash.renderConfig === 'function') Dash.renderConfig();
+        }
+
+        if(key === 'orders'){
+          if(typeof Dash !== 'undefined' && typeof Dash.renderPedidos === 'function') Dash.renderPedidos();
+          if(typeof Dash !== 'undefined' && typeof Dash.updatePanelKPIs === 'function') Dash.updatePanelKPIs();
+        }
+
+        if(key === 'customers'){
+          if(typeof Dash !== 'undefined' && typeof Dash.renderClientes === 'function') Dash.renderClientes();
+        }
+
+        if(key === 'nosotros'){
+          if(typeof loadNosotros === 'function') loadNosotros();
+        }
+
+        if(key === 'heatmap'){
+          if(typeof Dash !== 'undefined' && typeof Dash.renderHeatmap === 'function') Dash.renderHeatmap();
+        }
+      }catch(err){
+        console.log('RENDER SYNC ERROR ->', key, err.message);
+      }
+    };
+
+    async function bootstrapSync(){
+      try{
+        for(const key of syncKeys){
+          const snap = await docRef(key).get();
+
+          if(snap.exists && snap.data() && typeof snap.data().value !== 'undefined'){
+            baseSet(key, snap.data().value);
+          }else if(LS.get(key) !== null){
+            await pushKey(key);
           }
 
-          window.__syncReady = true;
+          docRef(key).onSnapshot(doc => {
+            if(!doc.exists) return;
+
+            const remote = doc.data() ? doc.data().value : null;
+            const local = LS.get(key);
+
+            if(JSON.stringify(remote) !== JSON.stringify(local)){
+              baseSet(key, remote);
+              if(typeof window.handleSyncedUpdate === 'function'){
+                window.handleSyncedUpdate(key);
+              }
+            }
+
+            window.__syncReady = true;
+          });
+        }
+
+        window.__syncReady = true;
+        console.log('SYNC READY');
+
+        syncKeys.forEach(k => {
+          if(typeof window.handleSyncedUpdate === 'function'){
+            window.handleSyncedUpdate(k);
+          }
         });
+      }catch(err){
+        console.log('Sync bootstrap fallback to local mode', err.message);
       }
-
-      window.__syncReady = true;
-      console.log('SYNC READY');
-    }catch(err){
-      console.log('SYNC BOOTSTRAP ERROR', err.message);
     }
-  }
 
-  bootstrapSync();
+    bootstrapSync();
+  }catch(e){
+    console.log('Firebase:', e.message);
+  }
 })();
 
 /* =========================
@@ -1550,18 +1640,18 @@ function setProductsSync(data){
   LS.set('products', data || []);
 }
 
-function getConfigSync(){
-  return LS.get('config') || {};
+function getStoreSync(){
+  return LS.get('store') || {};
 }
-function setConfigSync(data){
-  LS.set('config', data || {});
+function setStoreSync(data){
+  LS.set('store', data || {});
 }
 
-function getMetricsSync(){
-  return LS.get('metrics') || {};
+function getHeatmapSync(){
+  return LS.get('heatmap') || {};
 }
-function setMetricsSync(data){
-  LS.set('metrics', data || {});
+function setHeatmapSync(data){
+  LS.set('heatmap', data || {});
 }
 </script>
 
