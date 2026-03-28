@@ -1411,14 +1411,17 @@ const App={
 })();
 </script>
 
+</script>
+
 <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-database-compat.js"></script>
 
 <script>
 const firebaseConfig = {
   apiKey: "AIzaSyDPXcIHmLdv8jtfIPMJ8OmQYR8xRbI9Y-Y",
   authDomain: "auracipoletti.firebaseapp.com",
+  databaseURL: "https://auracipoletti-default-rtdb.firebaseio.com",
   projectId: "auracipoletti",
   storageBucket: "auracipoletti.firebasestorage.app",
   messagingSenderId: "276346261251",
@@ -1428,11 +1431,11 @@ const firebaseConfig = {
 if (!firebase.apps.length) {
   firebase.initializeApp(firebaseConfig);
 }
-const db = firebase.firestore();
-console.log("Firebase conectado");
+const rtdb = firebase.database();
+console.log("Realtime Database conectada");
 
 /* =========================
-   Capa local + sync Firestore
+   Capa local + sync RTDB
 ========================= */
 const LS = {
   get: k => {
@@ -1448,7 +1451,7 @@ const LS = {
 window.__syncReady = false;
 
 (function(){
-  const syncKeys = ['products','taxonomy','store','orders','customers','nosotros'];
+  const syncKeys = ['config','products','metrics'];
   const baseSet = LS.set.bind(LS);
   const timers = {};
 
@@ -1456,16 +1459,13 @@ window.__syncReady = false;
     return JSON.parse(JSON.stringify(v));
   }
 
-  function docRef(key){
-    return db.collection('aura_sync').doc(key);
+  function refPath(key){
+    return rtdb.ref(key);
   }
 
   async function pushKey(key){
     try{
-      await docRef(key).set({
-        value: safeClone(LS.get(key)),
-        updatedAt: new Date().toISOString()
-      });
+      await refPath(key).set(safeClone(LS.get(key)));
       console.log('SYNC OK ->', key);
       window.__syncReady = true;
     }catch(err){
@@ -1486,25 +1486,18 @@ window.__syncReady = false;
       if(key === 'products'){
         if(typeof renderProducts === 'function') renderProducts();
         if(typeof Dash !== 'undefined' && typeof Dash.renderInventory === 'function') Dash.renderInventory();
+        if(typeof Dash !== 'undefined' && typeof Dash.renderProductos === 'function') Dash.renderProductos();
       }
-      if(key === 'taxonomy'){
-        if(typeof renderProducts === 'function') renderProducts();
-        if(typeof Dash !== 'undefined' && typeof Dash.renderTaxonomy === 'function') Dash.renderTaxonomy();
-      }
-      if(key === 'store'){
+
+      if(key === 'config'){
         if(typeof applyStoreConfig === 'function') applyStoreConfig();
+        if(typeof loadConfig === 'function') loadConfig();
       }
-      if(key === 'orders'){
-        if(typeof Dash !== 'undefined' && typeof Dash.renderPedidos === 'function') Dash.renderPedidos();
-      }
-      if(key === 'customers'){
-        if(typeof Dash !== 'undefined' && typeof Dash.renderClientes === 'function') Dash.renderClientes();
-      }
-      if(key === 'nosotros'){
-        if(typeof renderNosotros === 'function') renderNosotros();
-      }
-      if(typeof Dash !== 'undefined' && typeof Dash.updatePanelKPIs === 'function'){
-        Dash.updatePanelKPIs();
+
+      if(key === 'metrics'){
+        if(typeof Dash !== 'undefined' && typeof Dash.updatePanelKPIs === 'function'){
+          Dash.updatePanelKPIs();
+        }
       }
     }catch(err){
       console.log('RENDER SYNC ERROR ->', key, err.message);
@@ -1514,18 +1507,16 @@ window.__syncReady = false;
   async function bootstrapSync(){
     try{
       for(const key of syncKeys){
-        const snap = await docRef(key).get();
+        const snap = await refPath(key).get();
 
-        if(snap.exists && snap.data() && typeof snap.data().value !== 'undefined'){
-          baseSet(key, snap.data().value);
-        }else if(LS.get(key) !== null){
+        if(snap.exists()){
+          baseSet(key, snap.val());
+        } else if(LS.get(key) !== null) {
           await pushKey(key);
         }
 
-        docRef(key).onSnapshot(doc => {
-          if(!doc.exists) return;
-
-          const remote = doc.data() ? doc.data().value : null;
+        refPath(key).on('value', snapshot => {
+          const remote = snapshot.exists() ? snapshot.val() : null;
           const local = LS.get(key);
 
           if(JSON.stringify(remote) !== JSON.stringify(local)){
@@ -1550,7 +1541,7 @@ window.__syncReady = false;
 })();
 
 /* =========================
-   Wrappers de guardado sincronizado
+   Wrappers sincronizados
 ========================= */
 function getProductsSync(){
   return LS.get('products') || [];
@@ -1559,39 +1550,18 @@ function setProductsSync(data){
   LS.set('products', data || []);
 }
 
-function getTaxonomySync(){
-  return LS.get('taxonomy') || { categories: [], subcategories: [] };
+function getConfigSync(){
+  return LS.get('config') || {};
 }
-function setTaxonomySync(data){
-  LS.set('taxonomy', data || { categories: [], subcategories: [] });
-}
-
-function getStoreSync(){
-  return LS.get('store') || {};
-}
-function setStoreSync(data){
-  LS.set('store', data || {});
+function setConfigSync(data){
+  LS.set('config', data || {});
 }
 
-function getOrdersSync(){
-  return LS.get('orders') || [];
+function getMetricsSync(){
+  return LS.get('metrics') || {};
 }
-function setOrdersSync(data){
-  LS.set('orders', data || []);
-}
-
-function getCustomersSync(){
-  return LS.get('customers') || [];
-}
-function setCustomersSync(data){
-  LS.set('customers', data || []);
-}
-
-function getNosotrosSync(){
-  return LS.get('nosotros') || {};
-}
-function setNosotrosSync(data){
-  LS.set('nosotros', data || {});
+function setMetricsSync(data){
+  LS.set('metrics', data || {});
 }
 </script>
 
