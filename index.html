@@ -5989,10 +5989,112 @@
       .promo-tiers-grid { grid-template-columns: 1fr 1fr; }
     }
 
+
+
+    /* ══ SPLASH SCREEN ═══════════════════════════ */
+    #app-splash {
+      position: fixed;
+      inset: 0;
+      z-index: 999999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--navy2, #080C22);
+      opacity: 1;
+      visibility: visible;
+      transition: opacity .42s ease, visibility .42s ease;
+    }
+
+    #app-splash.is-hidden {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+
+    .app-splash-inner {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 1rem;
+      padding: 1.5rem;
+      text-align: center;
+    }
+
+    .app-splash-spinner {
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      position: relative;
+      animation: splashRotate 1s linear infinite;
+      background: conic-gradient(
+        from 0deg,
+        rgba(214, 182, 106, 1) 0deg,
+        rgba(214, 182, 106, .96) 36deg,
+        rgba(214, 182, 106, .78) 90deg,
+        rgba(214, 182, 106, .42) 145deg,
+        rgba(214, 182, 106, .14) 200deg,
+        rgba(214, 182, 106, .03) 250deg,
+        rgba(214, 182, 106, 0) 320deg,
+        rgba(214, 182, 106, 0) 360deg
+      );
+      box-shadow: 0 0 28px rgba(214, 182, 106, .12);
+    }
+
+    .app-splash-spinner::before {
+      content: '';
+      position: absolute;
+      inset: 8px;
+      border-radius: 50%;
+      background: var(--navy2, #080C22);
+    }
+
+    .app-splash-spinner::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      background: radial-gradient(circle at center, transparent 58%, rgba(0, 0, 0, .18) 59%, transparent 64%);
+      opacity: .6;
+    }
+
+    .app-splash-brand {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.5rem;
+      font-weight: 400;
+      letter-spacing: .28em;
+      text-transform: uppercase;
+      color: #fff;
+      line-height: 1;
+      padding-left: .28em;
+    }
+
+    .app-splash-sub {
+      font-size: .62rem;
+      font-weight: 600;
+      letter-spacing: .18em;
+      text-transform: uppercase;
+      color: rgba(214, 182, 106, .72);
+    }
+
+    @keyframes splashRotate {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
   </style>
 </head>
 
+
 <body>
+  <div id="app-splash" aria-live="polite" aria-label="Cargando aplicación">
+    <div class="app-splash-inner">
+      <div class="app-splash-spinner" aria-hidden="true"></div>
+      <div class="app-splash-brand">AURA</div>
+      <div class="app-splash-sub">Perfumería</div>
+    </div>
+  </div>
 
   <!-- ══ SCREEN 1: PORTAL GATE ══════════════════ -->
   <div id="s-portal" class="screen active">
@@ -10078,6 +10180,74 @@ const SugCenter = (() => {
       </div>
     </div>
   </div>
+
+  <script>
+    (function () {
+      const SPLASH_MIN_MS = 800;
+      const SPLASH_MAX_MS = 5000;
+      const SPLASH_FADE_MS = 420;
+      const splash = document.getElementById('app-splash');
+      if (!splash) return;
+
+      const startedAt = Date.now();
+      let hidden = false;
+
+      function waitForImage(img) {
+        return new Promise(resolve => {
+          if (!img) {
+            resolve();
+            return;
+          }
+          if (img.complete) {
+            resolve();
+            return;
+          }
+          const done = () => {
+            img.removeEventListener('load', done);
+            img.removeEventListener('error', done);
+            resolve();
+          };
+          img.addEventListener('load', done, { once: true });
+          img.addEventListener('error', done, { once: true });
+        });
+      }
+
+      function hideSplash() {
+        if (hidden) return;
+        hidden = true;
+        splash.classList.add('is-hidden');
+        window.setTimeout(() => {
+          splash.remove();
+        }, SPLASH_FADE_MS + 40);
+      }
+
+      function whenWindowLoaded() {
+        return new Promise(resolve => {
+          if (document.readyState === 'complete') {
+            resolve();
+            return;
+          }
+          window.addEventListener('load', resolve, { once: true });
+        });
+      }
+
+      function minDelay() {
+        const elapsed = Date.now() - startedAt;
+        const remaining = Math.max(0, SPLASH_MIN_MS - elapsed);
+        return new Promise(resolve => window.setTimeout(resolve, remaining));
+      }
+
+      function maxDelay() {
+        return new Promise(resolve => window.setTimeout(resolve, SPLASH_MAX_MS));
+      }
+
+      const imagesReady = Promise.all(Array.from(document.images).map(waitForImage));
+      const readySequence = Promise.all([whenWindowLoaded(), imagesReady, minDelay()]);
+
+      Promise.race([readySequence, maxDelay()]).then(hideSplash);
+    })();
+  </script>
+
 </body>
 
 </html>
