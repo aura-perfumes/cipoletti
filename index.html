@@ -6019,6 +6019,7 @@
                   <th>Envío</th>
                   <th>Fecha</th>
                   <th>Estado</th>
+                  <th>Acciones</th>
                 </tr>
               </thead>
               <tbody id="ped-tbody"></tbody>
@@ -7405,6 +7406,33 @@
       initProductCarousels(grid);
     }
     function upsertCustomerFromOrder(order) { const key = (order.phone || '').trim() || order.customerName.toLowerCase(); const idx = CUSTOMERS.findIndex(c => ((c.phone || '').trim() || c.name.toLowerCase()) === key); if (idx >= 0) { CUSTOMERS[idx].name = order.customerName; CUSTOMERS[idx].phone = order.phone; CUSTOMERS[idx].orders = (CUSTOMERS[idx].orders || 0) + 1; CUSTOMERS[idx].totalSpent = (CUSTOMERS[idx].totalSpent || 0) + order.total; CUSTOMERS[idx].lastOrder = order.date; CUSTOMERS[idx].segment = (CUSTOMERS[idx].totalSpent || 0) >= 50000 ? 'VIP' : 'Activo' } else { CUSTOMERS.push({ name: order.customerName, phone: order.phone, orders: 1, totalSpent: order.total, lastOrder: order.date, segment: order.total >= 50000 ? 'VIP' : 'Nuevo' }) } saveCustomersLS() }
+    function rebuildCustomersFromOrders() {
+      const grouped = {};
+      ORDERS.forEach(order => {
+        const key = (order.phone || '').trim() || String(order.customerName || '').toLowerCase();
+        if (!key) return;
+        if (!grouped[key]) {
+          grouped[key] = {
+            name: order.customerName || 'Cliente sin nombre',
+            phone: order.phone || '',
+            orders: 0,
+            totalSpent: 0,
+            lastOrder: order.date,
+            segment: 'Nuevo'
+          };
+        }
+        grouped[key].name = order.customerName || grouped[key].name;
+        grouped[key].phone = order.phone || grouped[key].phone;
+        grouped[key].orders += 1;
+        grouped[key].totalSpent += Number(order.total || 0);
+        if (!grouped[key].lastOrder || new Date(order.date) > new Date(grouped[key].lastOrder)) grouped[key].lastOrder = order.date;
+      });
+      CUSTOMERS = Object.values(grouped).map(c => ({
+        ...c,
+        segment: c.totalSpent >= 50000 ? 'VIP' : (c.orders > 1 ? 'Activo' : 'Nuevo')
+      })).sort((a, b) => new Date(b.lastOrder || 0) - new Date(a.lastOrder || 0));
+      saveCustomersLS();
+    }
     function trackZone(zone) { HEATMAP[zone] = (HEATMAP[zone] || 0) + 1; saveHeatmapLS(); const onAnaliticas = document.getElementById('sec-analiticas')?.style.display !== 'none'; if (onAnaliticas) Dash.renderHeatmap() }
 
     const Dash = {
@@ -7412,8 +7440,104 @@
       renderInventoryFilters() { const row = document.getElementById('inv-filter-row'); if (!row) return; row.innerHTML = `<button class="fc ${invStatusFilter === 'todos' ? 'active' : ''}" data-f="todos" onclick="Dash.invFilter(this)">Todos</button><button class="fc ${invStatusFilter === 'stock' ? 'active' : ''}" data-f="stock" onclick="Dash.invFilter(this)">En stock</button><button class="fc ${invStatusFilter === 'bajo' ? 'active' : ''}" data-f="bajo" onclick="Dash.invFilter(this)">Stock bajo</button><button class="fc ${invStatusFilter === 'agotado' ? 'active' : ''}" data-f="agotado" onclick="Dash.invFilter(this)">Agotado</button>` + TAXONOMY.categories.map(c => `<button class="fc ${invStatusFilter === c.id ? 'active' : ''}" data-f="${c.id}" onclick="Dash.invFilter(this)">${escapeHtml(c.name)}</button>`).join('') },
       invFilter(btn) { document.querySelectorAll('#inv-filter-row .fc').forEach(b => b.classList.remove('active')); btn.classList.add('active'); invStatusFilter = btn.dataset.f; this.renderInventory() },
       filterInventory(val) { invTextFilter = val; this.renderInventory() },
-      renderPedidos() { const t = document.getElementById('ped-tbody'); if (!t) return; const q = (document.getElementById('ped-search')?.value || '').toLowerCase().trim(); let list = ORDERS.filter(o => !q || [o.id, o.customerName, o.phone, o.address, o.items.map(i => i.name).join(' ')].join(' ').toLowerCase().includes(q)); if (!list.length) { t.innerHTML = '<tr><td colspan="7" class="tbl-empty">0 de 0 pedidos</td></tr>'; return } t.innerHTML = list.map(o => `<tr><td><strong>${o.id}</strong></td><td>${escapeHtml(o.customerName)}<div class="tbl-prod-sub">${escapeHtml(o.phone || 'Sin teléfono')}</div></td><td>${escapeHtml(o.items.map(i => `${i.name} x${i.qty}`).join(', '))}</td><td>$${Number(o.total).toLocaleString('es-AR')}</td><td>${o.delivery ? `$${Number(o.delivery).toLocaleString('es-AR')}` : 'Retiro / sin cálculo'}</td><td>${formatDateTime(o.date)}</td><td><span class="badge blue">${escapeHtml(o.status)}</span></td></tr>`).join('') },
+      getOrderStatusBadgeClass(status) {
+        const normalized = String(status || '').toLowerCase();
+        if (normalized.includes('confirm')) return 'green';
+        if (normalized.includes('deneg') || normalized.includes('cancel')) return 'red';
+        return 'blue';
+      },
+      renderPedidos() {
+        const t = document.getElementById('ped-tbody');
+        if (!t) return;
+        const q = (document.getElementById('ped-search')?.value || '').toLowerCase().trim();
+        let list = ORDERS.filter(o => !q || [o.id, o.customerName, o.phone, o.address, o.status, o.items.map(i => i.name).join(' ')].join(' ').toLowerCase().includes(q));
+        if (!list.length) {
+          t.innerHTML = '<tr><td colspan="8" class="tbl-empty">0 de 0 pedidos</td></tr>';
+          return;
+        }
+        t.innerHTML = list.map(o => {
+          const badgeClass = this.getOrderStatusBadgeClass(o.status);
+          return `<tr>
+            <td><strong>${o.id}</strong></td>
+            <td>${escapeHtml(o.customerName)}<div class="tbl-prod-sub">${escapeHtml(o.phone || 'Sin teléfono')}</div></td>
+            <td>${escapeHtml(o.items.map(i => `${i.name} x${i.qty}`).join(', '))}</td>
+            <td>$${Number(o.total).toLocaleString('es-AR')}</td>
+            <td>${o.delivery ? `$${Number(o.delivery).toLocaleString('es-AR')}` : 'Retiro / sin cálculo'}</td>
+            <td>${formatDateTime(o.date)}</td>
+            <td><span class="badge ${badgeClass}">${escapeHtml(o.status || 'Pendiente de confirmación')}</span></td>
+            <td>
+              <div class="order-actions-cell">
+                <button class="tbl-action" onclick="Dash.editOrder('${o.id}')">Editar</button>
+                <button class="tbl-action ok" onclick="Dash.setOrderStatus('${o.id}','Confirmado')">Confirmar</button>
+                <button class="tbl-action warn" onclick="Dash.setOrderStatus('${o.id}','Denegado')">Denegar</button>
+                <button class="tbl-action del" onclick="Dash.deleteOrder('${o.id}')">Eliminar</button>
+              </div>
+            </td>
+          </tr>`;
+        }).join('');
+      },
       filterPedidos() { this.renderPedidos() },
+      editOrder(id) {
+        const order = ORDERS.find(o => o.id === id);
+        if (!order) return;
+        document.getElementById('ord-edit-id').value = order.id;
+        document.getElementById('ord-edit-code').textContent = order.id;
+        document.getElementById('ord-edit-name').value = order.customerName || '';
+        document.getElementById('ord-edit-phone').value = order.phone || '';
+        document.getElementById('ord-edit-address').value = order.address || '';
+        document.getElementById('ord-edit-delivery').value = Number(order.delivery || 0);
+        document.getElementById('ord-edit-status').value = order.status || 'Pendiente de confirmación';
+        document.getElementById('ord-edit-notes').value = order.notes || '';
+        document.getElementById('ord-edit-items').innerHTML = (order.items || []).map(item => `<div class="ord-edit-item"><span>${escapeHtml(item.name)}</span><strong>x${Number(item.qty || 0)}</strong></div>`).join('') || '<div class="tbl-empty">Sin productos</div>';
+        document.getElementById('order-edit-modal').classList.add('active');
+      },
+      closeOrderEdit() {
+        document.getElementById('order-edit-modal')?.classList.remove('active');
+      },
+      saveOrderEdit() {
+        const id = document.getElementById('ord-edit-id')?.value;
+        const order = ORDERS.find(o => o.id === id);
+        if (!order) return;
+        order.customerName = document.getElementById('ord-edit-name').value.trim() || 'Cliente sin nombre';
+        order.phone = document.getElementById('ord-edit-phone').value.trim();
+        order.address = document.getElementById('ord-edit-address').value.trim() || 'No especificada';
+        order.delivery = Math.max(0, Number(document.getElementById('ord-edit-delivery').value || 0));
+        order.status = document.getElementById('ord-edit-status').value || 'Pendiente de confirmación';
+        order.notes = document.getElementById('ord-edit-notes').value.trim();
+        order.total = Number(order.subtotal || 0) + Number(order.delivery || 0);
+        saveOrdersLS();
+        rebuildCustomersFromOrders();
+        this.renderPedidos();
+        this.renderClientes();
+        this.updatePanelKPIs();
+        this.initAnalytics();
+        this.closeOrderEdit();
+        showToast('Pedido actualizado ✓');
+      },
+      setOrderStatus(id, status) {
+        const order = ORDERS.find(o => o.id === id);
+        if (!order) return;
+        order.status = status;
+        saveOrdersLS();
+        this.renderPedidos();
+        this.renderClientes();
+        this.updatePanelKPIs();
+        this.initAnalytics();
+        showToast(`Pedido ${id} ${String(status).toLowerCase()} ✓`);
+      },
+      deleteOrder(id) {
+        const order = ORDERS.find(o => o.id === id);
+        if (!order) return;
+        if (!confirm(`Eliminar el pedido ${id} de ${order.customerName || 'este cliente'}?`)) return;
+        ORDERS = ORDERS.filter(o => o.id !== id);
+        saveOrdersLS();
+        rebuildCustomersFromOrders();
+        this.renderPedidos();
+        this.renderClientes();
+        this.updatePanelKPIs();
+        this.initAnalytics();
+        showToast('Pedido eliminado ✓');
+      },
       renderClientes() { const t = document.getElementById('cli-tbody'); if (!t) return; const q = (document.getElementById('cli-search')?.value || '').toLowerCase().trim(); let list = CUSTOMERS.filter(c => !q || [c.name, c.phone, c.segment].join(' ').toLowerCase().includes(q)); if (!list.length) { t.innerHTML = '<tr><td colspan="6" class="tbl-empty">0 clientes</td></tr>'; return } t.innerHTML = list.map(c => `<tr><td><strong>${escapeHtml(c.name)}</strong></td><td>${escapeHtml(c.phone || 'Sin teléfono')}</td><td>${c.orders || 0}</td><td>$${Number(c.totalSpent || 0).toLocaleString('es-AR')}</td><td>${c.lastOrder ? formatDateTime(c.lastOrder) : '—'}</td><td><span class="badge ${c.segment === 'VIP' ? 'green' : 'gray'}">${escapeHtml(c.segment || 'Activo')}</span></td></tr>`).join('') },
       filterClientes() { this.renderClientes() },
       renderHeatmap() { const box = document.getElementById('heatmap-grid'); if (!box) return; const labels = { hero: 'Hero / portada', filters: 'Filtros de catálogo', productCard: 'Fichas de producto', addToCart: 'Botones agregar', cart: 'Carrito', whatsapp: 'CTA WhatsApp', nav: 'Navegación', about: 'Nosotros / contacto' }; const total = Object.values(HEATMAP).reduce((a, b) => a + b, 0) || 1; box.innerHTML = Object.entries(labels).map(([k, label]) => { const val = HEATMAP[k] || 0; const intensity = Math.max(.08, Math.min(.95, val / Math.max(...Object.values(HEATMAP), 1))); const pct = Math.round((val / total) * 100); return `<div class="heat-cell" style="--intensity:${intensity}"><div class="heat-zone">${label}</div><div class="heat-value">${val}</div><div class="heat-sub">${pct}% de interacción</div></div>` }).join('') },
@@ -9524,6 +9648,59 @@ const SugCenter = (() => {
       }
     })();
   </script>
+
+  <div class="modal-overlay" id="order-edit-modal" onclick="if(event.target===this)Dash.closeOrderEdit()">
+    <div class="checkout-modal order-edit-modal-card">
+      <div class="cko-hdr">
+        <div>
+          <div class="cko-hdr-title">Editar pedido</div>
+          <div class="cko-hdr-sub" id="ord-edit-code">PED-000000</div>
+        </div>
+        <button class="cko-x" type="button" onclick="Dash.closeOrderEdit()">✕</button>
+      </div>
+      <div class="order-edit-body">
+        <input type="hidden" id="ord-edit-id" />
+        <div class="order-edit-grid">
+          <div>
+            <label class="config-label">Cliente</label>
+            <input class="config-input" id="ord-edit-name" type="text" />
+          </div>
+          <div>
+            <label class="config-label">Teléfono</label>
+            <input class="config-input" id="ord-edit-phone" type="text" />
+          </div>
+          <div style="grid-column:1/-1">
+            <label class="config-label">Dirección</label>
+            <input class="config-input" id="ord-edit-address" type="text" />
+          </div>
+          <div>
+            <label class="config-label">Envío</label>
+            <input class="config-input" id="ord-edit-delivery" type="number" min="0" step="1" />
+          </div>
+          <div>
+            <label class="config-label">Estado</label>
+            <select class="config-input" id="ord-edit-status">
+              <option value="Pendiente de confirmación">Pendiente de confirmación</option>
+              <option value="Confirmado">Confirmado</option>
+              <option value="Denegado">Denegado</option>
+            </select>
+          </div>
+          <div style="grid-column:1/-1">
+            <label class="config-label">Notas</label>
+            <textarea class="config-input" id="ord-edit-notes" rows="4" style="resize:vertical"></textarea>
+          </div>
+        </div>
+        <div class="order-edit-products-box">
+          <div class="order-edit-products-title">Productos del pedido</div>
+          <div id="ord-edit-items"></div>
+        </div>
+        <div class="order-edit-actions">
+          <button class="btn-outline" type="button" onclick="Dash.closeOrderEdit()">Cancelar</button>
+          <button class="btn-dark" type="button" onclick="Dash.saveOrderEdit()">Guardar cambios</button>
+        </div>
+      </div>
+    </div>
+  </div>
 </body>
 
 </html>
