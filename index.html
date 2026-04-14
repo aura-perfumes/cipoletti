@@ -3118,6 +3118,169 @@
       padding: 2px
     }
 
+    .config-shell {
+      display: grid;
+      grid-template-columns: 250px minmax(0, 1fr);
+      gap: 1.25rem;
+      align-items: start
+    }
+
+    .config-tabs {
+      display: flex;
+      flex-direction: column;
+      gap: .6rem;
+      position: sticky;
+      top: 1rem
+    }
+
+    .config-tab {
+      width: 100%;
+      border: 1px solid var(--border);
+      background: #fff;
+      color: var(--muted);
+      border-radius: 14px;
+      padding: .95rem 1rem;
+      text-align: left;
+      transition: border-color var(--trans), background var(--trans), color var(--trans), box-shadow var(--trans);
+      display: flex;
+      flex-direction: column;
+      gap: .18rem
+    }
+
+    .config-tab:hover {
+      border-color: #cbd5e1;
+      color: var(--text)
+    }
+
+    .config-tab.active {
+      background: linear-gradient(180deg, rgba(12,15,26,.98) 0%, rgba(19,27,77,.96) 100%);
+      color: #fff;
+      border-color: rgba(201,168,76,.42);
+      box-shadow: 0 10px 30px rgba(8, 12, 34, .16)
+    }
+
+    .config-tab-title {
+      font-size: .83rem;
+      font-weight: 700;
+      letter-spacing: .02em
+    }
+
+    .config-tab-sub {
+      font-size: .66rem;
+      opacity: .8;
+      line-height: 1.45
+    }
+
+    .config-panels {
+      min-width: 0
+    }
+
+    .config-panel {
+      display: none;
+      animation: fadeUp .25s ease both
+    }
+
+    .config-panel.active {
+      display: block
+    }
+
+    .config-panel > .config-section:last-child {
+      margin-bottom: 0
+    }
+
+    .config-link-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: .85rem
+    }
+
+    .config-link-card {
+      border: 1px solid var(--border);
+      background: linear-gradient(180deg, #fff 0%, #f8fafc 100%);
+      border-radius: 14px;
+      padding: 1rem
+    }
+
+    .config-link-title {
+      font-size: .84rem;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: .3rem
+    }
+
+    .config-link-text {
+      font-size: .73rem;
+      color: var(--muted);
+      line-height: 1.55;
+      margin-bottom: .8rem
+    }
+
+    .config-preview-box {
+      width: 100%;
+      min-height: 220px;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+      padding: 1rem;
+      font-size: .82rem;
+      color: var(--text);
+      line-height: 1.6;
+      white-space: pre-wrap
+    }
+
+    .config-vars {
+      display: flex;
+      flex-wrap: wrap;
+      gap: .45rem;
+      margin-top: .65rem
+    }
+
+    .config-var-chip {
+      border: 1px solid rgba(201,168,76,.34);
+      background: rgba(201,168,76,.08);
+      color: var(--gold2);
+      border-radius: 999px;
+      padding: .34rem .65rem;
+      font-size: .68rem;
+      font-weight: 700
+    }
+
+    .config-help-list {
+      display: grid;
+      gap: .55rem
+    }
+
+    .config-help-item {
+      padding: .75rem .85rem;
+      border-radius: 12px;
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      font-size: .76rem;
+      color: var(--text);
+      line-height: 1.55
+    }
+
+    @media(max-width:980px) {
+      .config-shell {
+        grid-template-columns: 1fr
+      }
+
+      .config-tabs {
+        position: static;
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr))
+      }
+    }
+
+    @media(max-width:680px) {
+      .config-tabs,
+      .config-link-grid,
+      .config-grid,
+      .stat-grid-3 {
+        grid-template-columns: 1fr
+      }
+    }
+
     /* Toggle */
     .toggle-row {
       display: flex;
@@ -6120,281 +6283,409 @@
           <div>
             <button class="dash-back" onclick="App.show('s-portal')">← Volver al portal</button>
             <h1 class="dash-page-title display">Configuración</h1>
-            <p class="dash-page-sub">Ajustes de la tienda.</p>
+            <p class="dash-page-sub">Ajustes reorganizados por áreas para evitar el scroll largo.</p>
           </div>
         </div>
-        <!-- WhatsApp -->
-        <div class="config-section">
-          <div class="config-section-title">📱 WhatsApp — Pedidos</div>
-          <div class="config-grid">
-            <div>
-              <label class="config-label">Número de WhatsApp *</label>
-              <input class="config-input" type="text" id="cfg-wa-num" value="5492942444236"
-                placeholder="549...sin espacios ni +" />
-              <div class="config-hint">Código de país + número sin espacios ni +</div>
-            </div>
-            <div>
-              <label class="config-label">Nombre en ticket</label>
-              <input class="config-input" type="text" id="cfg-wa-name" value="AURA — Tienda Online" />
-            </div>
-          </div>
-          <button class="btn-dark"
-            style="margin-top:1rem;border-radius:99px;padding:.55rem 1.4rem;font-size:.7rem;letter-spacing:.08em"
-            onclick="Dash.saveWA()">Guardar WhatsApp</button>
-        </div>
-        <!-- Banner -->
-        <div class="config-section">
-          <div class="config-section-title">📣 Banner Superior</div>
-          <div style="margin-bottom:.75rem">
-            <label class="config-label">Texto del banner</label>
-            <input class="config-input" type="text" id="cfg-banner-txt"
-              value="🌸 Nueva colección Otoño/Invierno 2026 — Envío gratis (Cipolletti o Neuquén) en pedidos mayores a $50.000" />
-          </div>
-          <div class="color-row">
-            <div class="color-wrap">
-              <label class="config-label">Fondo</label>
-              <input class="color-input" type="color" id="cfg-banner-bg" value="#1a1200" />
-            </div>
-            <div class="color-wrap">
-              <label class="config-label">Texto</label>
-              <input class="color-input" type="color" id="cfg-banner-fg" value="#C9A84C" />
-            </div>
-          </div>
-          <div class="toggle-row" style="margin-top:.75rem">
-            <label class="toggle"><input type="checkbox" id="cfg-banner-on" checked /><span
-                class="toggle-slider"></span></label>
-            <span class="toggle-label">Mostrar banner</span>
-          </div>
-          <button class="btn-dark"
-            style="margin-top:.9rem;border-radius:99px;padding:.55rem 1.4rem;font-size:.7rem;letter-spacing:.08em"
-            onclick="Dash.applyBanner()">Aplicar banner</button>
-        </div>
-        <!-- Dirección de retiro -->
-        <div class="config-section">
-          <div class="config-section-title">🏪 Dirección de Retiro</div>
-          <div class="config-grid">
-            <div class="config-full">
-              <label class="config-label">Dirección del local *</label>
-              <input class="config-input" type="text" id="cfg-dir" value="A coordinar" />
-            </div>
-            <div>
-              <label class="config-label">Horarios</label>
-              <input class="config-input" type="text" id="cfg-hs" value="Lun-Vie 10-19hs, Sáb 10-14hs" />
-            </div>
-            <div>
-              <label class="config-label">Email de contacto</label>
-              <input class="config-input" type="email" id="cfg-email" value="hola@aura.com" />
-            </div>
-          </div>
-          <button class="btn-dark"
-            style="margin-top:1rem;border-radius:99px;padding:.55rem 1.4rem;font-size:.7rem;letter-spacing:.08em"
-            onclick="Dash.saveTienda()">Guardar tienda</button>
-        </div>
-        <!-- Portada -->
 
-        <div class="config-section">
-          <div class="config-section-title">🚚 Métodos de envío</div>
-          <div class="config-hint" style="margin-bottom:.9rem">Activá uno, el otro o ambos. Si ambos están activos, el cliente puede elegir en el carrito.</div>
-          <div class="config-grid">
-            <div>
-              <label class="config-label" style="display:flex;align-items:center;justify-content:space-between;gap:.75rem">
-                <span>Calculador por GPS</span>
-                <input type="checkbox" id="cfg-ship-gps-on" />
-              </label>
-              <div class="config-hint">Usa ubicación o dirección y calcula por distancia.</div>
-            </div>
-            <div>
-              <label class="config-label" style="display:flex;align-items:center;justify-content:space-between;gap:.75rem">
-                <span>Zonas fijas</span>
-                <input type="checkbox" id="cfg-ship-zone-on" />
-              </label>
-              <div class="config-hint">Cipolletti $1.500 · Neuquén $3.000 · Fernández Oro $3.000</div>
-            </div>
-            <div class="config-full">
-              <button class="btn-dark" onclick="Dash.saveShippingMethods()">Guardar métodos de envío</button>
-            </div>
-          </div>
-        </div>
-        <div class="config-section">
-          <div class="config-section-title">🏠 Portada de la Tienda</div>
-          <div class="config-hint" style="margin-bottom:.9rem">Todo lo que ven los clientes al ingresar a la tienda.
-            Editable sin tocar código.</div>
+        <div class="config-shell">
+          <aside class="config-tabs" id="config-tabs-nav">
+            <button class="config-tab active" type="button" data-config-tab="general" onclick="Dash.switchConfigTab('general', this)">
+              <span class="config-tab-title">1. General</span>
+              <span class="config-tab-sub">Marca, portada, logo, colores y ajustes globales</span>
+            </button>
+            <button class="config-tab" type="button" data-config-tab="catalogo" onclick="Dash.switchConfigTab('catalogo', this)">
+              <span class="config-tab-title">2. Productos / Catálogo</span>
+              <span class="config-tab-sub">Categorías, productos, precios y disponibilidad</span>
+            </button>
+            <button class="config-tab" type="button" data-config-tab="promociones" onclick="Dash.switchConfigTab('promociones', this)">
+              <span class="config-tab-title">3. Promociones</span>
+              <span class="config-tab-sub">Descuentos, promos activas y banners comerciales</span>
+            </button>
+            <button class="config-tab" type="button" data-config-tab="pedidos" onclick="Dash.switchConfigTab('pedidos', this)">
+              <span class="config-tab-title">4. Pedidos</span>
+              <span class="config-tab-sub">Flujo de trabajo, entrega y operación del pedido</span>
+            </button>
+            <button class="config-tab" type="button" data-config-tab="ticket" onclick="Dash.switchConfigTab('ticket', this)">
+              <span class="config-tab-title">5. Ticket / WhatsApp</span>
+              <span class="config-tab-sub">Número, mensaje editable y vista previa en tiempo real</span>
+            </button>
+            <button class="config-tab" type="button" data-config-tab="usuarios" onclick="Dash.switchConfigTab('usuarios', this)">
+              <span class="config-tab-title">6. Usuarios / Personal</span>
+              <span class="config-tab-sub">Accesos, roles y seguridad administrativa</span>
+            </button>
+            <button class="config-tab" type="button" data-config-tab="notificaciones" onclick="Dash.switchConfigTab('notificaciones', this)">
+              <span class="config-tab-title">7. Notificaciones</span>
+              <span class="config-tab-sub">Alertas del sistema y automatizaciones disponibles</span>
+            </button>
+          </aside>
 
-          <!-- Logo mobile de la portada -->
-          <div style="margin-bottom:1rem">
-            <label class="config-label">Logo para portada mobile (imagen)</label>
-            <div style="display:flex;gap:.75rem;align-items:flex-start;flex-wrap:wrap">
-              <div>
-                <div class="hero-logo-preview" id="hero-logo-preview">Sin logo cargado</div>
-                <label class="file-pill" style="margin-top:.4rem">Cargar logo
-                  <input type="file" id="cfg-hero-logo" accept="image/*" onchange="Dash.loadHeroLogo(event)" />
-                </label>
+          <div class="config-panels">
+            <section class="config-panel active" data-config-panel="general">
+              <div class="config-section">
+                <div class="config-section-title">🏷 General — Identidad de la tienda</div>
+                <div class="config-grid">
+                  <div>
+                    <label class="config-label">Nombre del negocio / ticket</label>
+                    <input class="config-input" type="text" id="cfg-wa-name" value="AURA — Tienda Online" oninput="const t=document.getElementById('cfg-wa-name-ticket'); if(t) t.value=this.value" />
+                    <div class="config-hint">Se usa como referencia de la tienda dentro del mensaje y la operación.</div>
+                  </div>
+                  <div>
+                    <label class="config-label">Idioma / formato</label>
+                    <input class="config-input" type="text" value="Español (AR)" readonly />
+                    <div class="config-hint">Formato actual del archivo y moneda configurada.</div>
+                  </div>
+                </div>
+                <button class="btn-dark" style="margin-top:1rem;border-radius:99px;padding:.55rem 1.4rem;font-size:.7rem;letter-spacing:.08em" onclick="Dash.saveWA()">Guardar datos generales</button>
               </div>
-              <div style="flex:1;min-width:180px">
-                <div class="config-hint" style="margin-bottom:.5rem">Este logo reemplaza el texto "AURA" en la portada
-                  mobile. Ideal: PNG con fondo transparente, formato horizontal.</div>
-                <div class="toggle-row">
-                  <label class="toggle"><input type="checkbox" id="cfg-hero-logo-on"
-                      onchange="Dash.applyPortada()" /><span class="toggle-slider"></span></label>
-                  <span class="toggle-label">Mostrar logo en portada mobile</span>
+
+              <div class="config-section">
+                <div class="config-section-title">📣 Banner superior</div>
+                <div style="margin-bottom:.75rem">
+                  <label class="config-label">Texto del banner</label>
+                  <input class="config-input" type="text" id="cfg-banner-txt" value="🌸 Nueva colección Otoño/Invierno 2026 — Envío gratis (Cipolletti o Neuquén) en pedidos mayores a $50.000" />
+                </div>
+                <div class="color-row">
+                  <div class="color-wrap">
+                    <label class="config-label">Color de texto</label>
+                    <input class="color-input" type="color" id="cfg-banner-fg" value="#C9A84C" />
+                  </div>
+                </div>
+                <div class="toggle-row" style="margin-top:.75rem">
+                  <label class="toggle"><input type="checkbox" id="cfg-banner-on" checked /><span class="toggle-slider"></span></label>
+                  <span class="toggle-label">Mostrar banner</span>
+                </div>
+                <button class="btn-dark" style="margin-top:.9rem;border-radius:99px;padding:.55rem 1.4rem;font-size:.7rem;letter-spacing:.08em" onclick="Dash.applyBanner()">Aplicar banner</button>
+              </div>
+
+              <div class="config-section">
+                <div class="config-section-title">🏠 Portada de la tienda</div>
+                <div class="config-hint" style="margin-bottom:.9rem">Todo lo que ve el cliente al ingresar.</div>
+
+                <div style="margin-bottom:1rem">
+                  <label class="config-label">Logo para portada mobile (imagen)</label>
+                  <div style="display:flex;gap:.75rem;align-items:flex-start;flex-wrap:wrap">
+                    <div>
+                      <div class="hero-logo-preview" id="hero-logo-preview">Sin logo cargado</div>
+                      <label class="file-pill" style="margin-top:.4rem">Cargar logo
+                        <input type="file" id="cfg-hero-logo" accept="image/*" onchange="Dash.loadHeroLogo(event)" />
+                      </label>
+                    </div>
+                    <div style="flex:1;min-width:180px">
+                      <div class="config-hint" style="margin-bottom:.5rem">Este logo reemplaza el texto "AURA" en la portada mobile.</div>
+                      <div class="toggle-row">
+                        <label class="toggle"><input type="checkbox" id="cfg-hero-logo-on" onchange="Dash.applyPortada()" /><span class="toggle-slider"></span></label>
+                        <span class="toggle-label">Mostrar logo en portada mobile</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div style="display:flex;gap:.75rem;margin-top:.6rem;flex-wrap:wrap">
+                    <button class="btn-dark" style="border-radius:99px;padding:.45rem 1.1rem;font-size:.68rem" onclick="Dash.applyHeroLogo()">Aplicar logo</button>
+                    <button class="btn-outline" style="border-radius:99px;padding:.45rem 1.1rem;font-size:.68rem" onclick="Dash.clearHeroLogo()">Quitar logo</button>
+                  </div>
+                </div>
+
+                <div class="subtle-divider"></div>
+
+                <div style="margin-bottom:.75rem;margin-top:.75rem">
+                  <label class="config-label">Encabezado (texto pequeño superior)</label>
+                  <div class="toggle-row" style="margin-bottom:.4rem">
+                    <label class="toggle"><input type="checkbox" id="cfg-hero-enc-on" checked onchange="Dash.applyPortada()" /><span class="toggle-slider"></span></label>
+                    <span class="toggle-label" style="font-size:.72rem">Mostrar encabezado</span>
+                  </div>
+                  <input class="config-input" type="text" id="cfg-hero-enc" value="Nueva colección Otoño/Invierno 2026 — Envío gratis (Cipolletti o Neuquén) en pedidos mayores a $50.000" />
+                </div>
+                <div style="margin-bottom:.75rem">
+                  <label class="config-label">Título principal</label>
+                  <div class="toggle-row" style="margin-bottom:.4rem">
+                    <label class="toggle"><input type="checkbox" id="cfg-hero-title-on" checked onchange="Dash.applyPortada()" /><span class="toggle-slider"></span></label>
+                    <span class="toggle-label" style="font-size:.72rem">Mostrar título</span>
+                  </div>
+                  <input class="config-input" type="text" id="cfg-hero-title" value="Elevamos Tu Esencia" />
+                  <div class="config-hint">La última palabra se renderiza en cursiva dorada automáticamente.</div>
+                </div>
+                <div style="margin-bottom:.75rem">
+                  <label class="config-label">Descripción / subtítulo</label>
+                  <div class="toggle-row" style="margin-bottom:.4rem">
+                    <label class="toggle"><input type="checkbox" id="cfg-hero-sub-on" checked onchange="Dash.applyPortada()" /><span class="toggle-slider"></span></label>
+                    <span class="toggle-label" style="font-size:.72rem">Mostrar subtítulo</span>
+                  </div>
+                  <textarea class="config-textarea" id="cfg-hero-sub">Fragancias que hablan antes que vos.</textarea>
+                </div>
+                <div style="margin-bottom:.75rem">
+                  <label class="config-label">Texto secundario (opcional)</label>
+                  <div class="toggle-row" style="margin-bottom:.4rem">
+                    <label class="toggle"><input type="checkbox" id="cfg-hero-extra-on" onchange="Dash.applyPortada()" /><span class="toggle-slider"></span></label>
+                    <span class="toggle-label" style="font-size:.72rem">Mostrar texto secundario</span>
+                  </div>
+                  <input class="config-input" type="text" id="cfg-hero-extra" placeholder="Texto adicional debajo del subtítulo" />
+                </div>
+                <button class="btn-dark" style="border-radius:99px;padding:.55rem 1.4rem;font-size:.7rem;letter-spacing:.08em" onclick="Dash.applyPortada()">Aplicar portada</button>
+              </div>
+
+              <div class="config-section">
+                <div class="config-section-title">🖼 Fondos e imagen principal</div>
+                <div class="config-grid">
+                  <div>
+                    <label class="config-label">Fondo editable de portada</label>
+                    <div class="hero-preview" id="hero-bg-preview">Vista previa de fondo principal</div>
+                    <div style="margin-top:.75rem;display:flex;flex-direction:column;gap:.55rem">
+                      <input class="config-input" type="url" id="cfg-hero-bg-url" placeholder="https://i.imgur.com/ejemplo.jpg" oninput="Dash.previewHeroBgUrl(this.value)" />
+                      <div style="display:flex;gap:.75rem;flex-wrap:wrap">
+                        <button class="btn-dark" style="border-radius:99px;padding:.55rem 1.4rem;font-size:.7rem" type="button" onclick="Dash.applyHeroBgUrl()">Aplicar fondo</button>
+                        <button class="btn-outline" style="border-radius:99px;padding:.55rem 1.4rem;font-size:.7rem" type="button" onclick="Dash.clearHeroBackground()">Quitar fondo</button>
+                      </div>
+                    </div>
+                    <input type="hidden" id="cfg-hero-bg" />
+                  </div>
+                  <div>
+                    <label class="config-label">Imagen de fondo del panel inicial</label>
+                    <div class="img-preview" id="portal-img-preview" style="margin-bottom:.75rem">Vista previa del panel inicial</div>
+                    <input class="config-input" type="url" id="cfg-portal-img-url" placeholder="https://i.imgur.com/ejemplo.jpg" oninput="Dash.previewPortalImgUrl(this.value)" style="margin-bottom:.6rem" />
+                    <div style="display:flex;gap:.75rem;flex-wrap:wrap">
+                      <button class="btn-dark" style="border-radius:99px;padding:.55rem 1.4rem;font-size:.7rem" onclick="Dash.applyPortalImgUrl()">Aplicar imagen</button>
+                      <button class="btn-outline" style="border-radius:99px;padding:.55rem 1.4rem;font-size:.7rem" onclick="Dash.clearPortalImage()">Quitar imagen</button>
+                    </div>
+                    <input type="hidden" id="cfg-portal-img" />
+                  </div>
                 </div>
               </div>
-            </div>
-            <div style="display:flex;gap:.75rem;margin-top:.6rem;flex-wrap:wrap">
-              <button class="btn-dark" style="border-radius:99px;padding:.45rem 1.1rem;font-size:.68rem"
-                onclick="Dash.applyHeroLogo()">Aplicar logo</button>
-              <button class="btn-outline" style="border-radius:99px;padding:.45rem 1.1rem;font-size:.68rem"
-                onclick="Dash.clearHeroLogo()">Quitar logo</button>
-            </div>
-          </div>
 
-          <div class="subtle-divider"></div>
-
-          <div style="margin-bottom:.75rem;margin-top:.75rem">
-            <label class="config-label">Encabezado (texto pequeño superior)</label>
-            <div class="toggle-row" style="margin-bottom:.4rem">
-              <label class="toggle"><input type="checkbox" id="cfg-hero-enc-on" checked
-                  onchange="Dash.applyPortada()" /><span class="toggle-slider"></span></label>
-              <span class="toggle-label" style="font-size:.72rem">Mostrar encabezado</span>
-            </div>
-            <input class="config-input" type="text" id="cfg-hero-enc"
-              value="Nueva colección Otoño/Invierno 2026 — Envío gratis (Cipolletti o Neuquén) en pedidos mayores a $50.000" />
-          </div>
-          <div style="margin-bottom:.75rem">
-            <label class="config-label">Título principal</label>
-            <div class="toggle-row" style="margin-bottom:.4rem">
-              <label class="toggle"><input type="checkbox" id="cfg-hero-title-on" checked
-                  onchange="Dash.applyPortada()" /><span class="toggle-slider"></span></label>
-              <span class="toggle-label" style="font-size:.72rem">Mostrar título</span>
-            </div>
-            <input class="config-input" type="text" id="cfg-hero-title" value="Elevamos Tu Esencia" />
-            <div class="config-hint">La última palabra irá en cursiva dorada automáticamente.</div>
-          </div>
-          <div style="margin-bottom:.75rem">
-            <label class="config-label">Descripción / subtítulo</label>
-            <div class="toggle-row" style="margin-bottom:.4rem">
-              <label class="toggle"><input type="checkbox" id="cfg-hero-sub-on" checked
-                  onchange="Dash.applyPortada()" /><span class="toggle-slider"></span></label>
-              <span class="toggle-label" style="font-size:.72rem">Mostrar subtítulo</span>
-            </div>
-            <textarea class="config-textarea" id="cfg-hero-sub">Fragancias que hablan antes que vos.</textarea>
-          </div>
-          <div style="margin-bottom:.75rem">
-            <label class="config-label">Texto secundario (opcional)</label>
-            <div class="toggle-row" style="margin-bottom:.4rem">
-              <label class="toggle"><input type="checkbox" id="cfg-hero-extra-on" onchange="Dash.applyPortada()" /><span
-                  class="toggle-slider"></span></label>
-              <span class="toggle-label" style="font-size:.72rem">Mostrar texto secundario</span>
-            </div>
-            <input class="config-input" type="text" id="cfg-hero-extra"
-              placeholder="Texto adicional debajo del subtítulo (ej: envío gratis, oferta especial...)" />
-          </div>
-          <button class="btn-dark" style="border-radius:99px;padding:.55rem 1.4rem;font-size:.7rem;letter-spacing:.08em"
-            onclick="Dash.applyPortada()">Aplicar portada</button>
-        </div>
-        <div class="config-section">
-          <div class="config-section-title">🖼 Fondo editable de portada (tienda)</div>
-          <div class="config-hint" style="margin-bottom:.9rem">URL de la imagen que aparece de fondo en la portada de la
-            tienda.</div>
-          <div class="hero-preview" id="hero-bg-preview">Vista previa de fondo principal</div>
-          <div style="margin-top:.75rem;display:flex;flex-direction:column;gap:.55rem">
-            <input class="config-input" type="url" id="cfg-hero-bg-url" placeholder="https://i.imgur.com/ejemplo.jpg"
-              oninput="Dash.previewHeroBgUrl(this.value)" />
-            <div style="display:flex;gap:.75rem;flex-wrap:wrap">
-              <button class="btn-dark" style="border-radius:99px;padding:.55rem 1.4rem;font-size:.7rem" type="button"
-                onclick="Dash.applyHeroBgUrl()">Aplicar fondo</button>
-              <button class="btn-outline" style="border-radius:99px;padding:.55rem 1.4rem;font-size:.7rem" type="button"
-                onclick="Dash.clearHeroBackground()">Quitar fondo</button>
-            </div>
-          </div>
-          <!-- Hidden file input kept for backward compat -->
-          <input type="hidden" id="cfg-hero-bg" />
-        </div>
-        <div class="config-section">
-          <div class="config-section-title">🖼 Imagen de fondo — Panel inicial</div>
-          <div class="config-hint" style="margin-bottom:.9rem">Imagen que aparece de fondo en la pantalla de inicio
-            (detrás de los botones Personal y Cliente).</div>
-          <div class="img-preview" id="portal-img-preview" style="margin-bottom:.75rem">Vista previa del panel inicial
-          </div>
-          <input class="config-input" type="url" id="cfg-portal-img-url" placeholder="https://i.imgur.com/ejemplo.jpg"
-            oninput="Dash.previewPortalImgUrl(this.value)" style="margin-bottom:.6rem" />
-          <div style="display:flex;gap:.75rem;flex-wrap:wrap">
-            <button class="btn-dark" style="border-radius:99px;padding:.55rem 1.4rem;font-size:.7rem"
-              onclick="Dash.applyPortalImgUrl()">Aplicar imagen</button>
-            <button class="btn-outline" style="border-radius:99px;padding:.55rem 1.4rem;font-size:.7rem"
-              onclick="Dash.clearPortalImage()">Quitar imagen</button>
-          </div>
-          <!-- Hidden inputs kept for backward compat -->
-          <input type="hidden" id="cfg-portal-img" />
-        </div>
-
-        <div class="config-section">
-          <div class="config-section-title">🗂 Categorías y subcategorías</div>
-          <div class="taxonomy-layout">
-            <div class="tax-box">
-              <label class="config-label">Agregar categoría</label>
-              <div class="tax-row">
-                <input class="config-input" type="text" id="tax-new-cat" placeholder="Ej: Cítricos" />
-                <button class="btn-dark" type="button" onclick="Dash.addCategory()">Agregar</button>
+              <div class="config-section">
+                <div class="config-section-title">📖 Página "Nosotros"</div>
+                <div class="config-hint" style="margin-bottom:.9rem">Contenido del modal visible en la tienda.</div>
+                <div style="margin-bottom:.75rem">
+                  <label class="config-label">Título del modal</label>
+                  <input class="config-input" type="text" id="cfg-nos-title" value="AURA Perfumería · Desde 2025" />
+                </div>
+                <div style="margin-bottom:.75rem">
+                  <label class="config-label">Párrafo 1</label>
+                  <textarea class="config-textarea" id="cfg-nos-p1">AURA nació tanto de una pasión por la perfumería como del buen trato con la gente. Desde el comienzo, la idea fue clara: construir un espacio donde cada fragancia tenga intención y cada cliente reciba una atención genuina, cercana y personalizada.</textarea>
+                </div>
+                <div style="margin-bottom:.75rem">
+                  <label class="config-label">Párrafo 2</label>
+                  <textarea class="config-textarea" id="cfg-nos-p2">Esa es la esencia de AURA: combinar el encanto de la perfumería con una experiencia humana, cálida y de confianza. Nos mueve el detalle, la dedicación y el compromiso de asesorar con criterio y honestidad.</textarea>
+                </div>
+                <div class="stat-grid-3">
+                  <div><label class="config-label">Valor 1</label><input class="config-input" type="text" id="cfg-s1v" value="1+" /></div>
+                  <div><label class="config-label">Valor 2</label><input class="config-input" type="text" id="cfg-s2v" value="100%" /></div>
+                  <div><label class="config-label">Valor 3</label><input class="config-input" type="text" id="cfg-s3v" value="Único" /></div>
+                  <div><label class="config-label">Etiqueta 1</label><input class="config-input" type="text" id="cfg-s1l" value="Años" /></div>
+                  <div><label class="config-label">Etiqueta 2</label><input class="config-input" type="text" id="cfg-s2l" value="Originales" /></div>
+                  <div><label class="config-label">Etiqueta 3</label><input class="config-input" type="text" id="cfg-s3l" value="Marca propia" /></div>
+                </div>
+                <button class="btn-dark" style="border-radius:99px;padding:.55rem 1.4rem;font-size:.7rem;letter-spacing:.08em" onclick="Dash.saveNosotros()">Guardar Nosotros</button>
               </div>
-              <div class="tax-hint">Estas categorías alimentan filtros, inventario y alta de productos.</div>
-              <div class="tax-list" id="tax-cat-list"></div>
-            </div>
-            <div class="tax-box">
-              <label class="config-label">Agregar subcategoría</label>
-              <div class="tax-row">
-                <select class="config-input" id="tax-parent-cat"></select>
-                <input class="config-input" type="text" id="tax-new-sub" placeholder="Ej: Ámbar" />
-                <button class="btn-dark" type="button" onclick="Dash.addSubcategory()">Agregar</button>
-              </div>
-              <div class="tax-hint">Cada subcategoría queda vinculada a una categoría principal.</div>
-              <div class="tax-list" id="tax-sub-list"></div>
-            </div>
-          </div>
-        </div>
-        <!-- Nosotros -->
-        <div class="config-section">
-          <div class="config-section-title">📖 Página "Nosotros"</div>
-          <div class="config-hint" style="margin-bottom:.9rem">Contenido del modal que se muestra al tocar "Nosotros" en
-            la tienda.</div>
-          <div style="margin-bottom:.75rem">
-            <label class="config-label">Título del modal</label>
-            <input class="config-input" type="text" id="cfg-nos-title" value="AURA Perfumería · Desde 2025" />
-          </div>
-          <div style="margin-bottom:.75rem">
-            <label class="config-label">Párrafo 1</label>
-            <textarea class="config-textarea"
-              id="cfg-nos-p1">AURA nació tanto de una pasión por la perfumería como del buen trato con la gente. Desde el comienzo, la idea fue clara: construir un espacio donde cada fragancia tenga intención y cada cliente reciba una atención genuina, cercana y personalizada.</textarea>
-          </div>
-          <div style="margin-bottom:.75rem">
-            <label class="config-label">Párrafo 2</label>
-            <textarea class="config-textarea"
-              id="cfg-nos-p2">Esa es la esencia de AURA: combinar el encanto de la perfumería con una experiencia humana, cálida y de confianza. Nos mueve el detalle, la dedicación y el compromiso de asesorar con criterio y honestidad.</textarea>
-          </div>
-          <div class="stat-grid-3">
-            <div><label class="config-label">Valor 1</label><input class="config-input" type="text" id="cfg-s1v"
-                value="1+" /></div>
-            <div><label class="config-label">Valor 2</label><input class="config-input" type="text" id="cfg-s2v"
-                value="100%" /></div>
-            <div><label class="config-label">Valor 3</label><input class="config-input" type="text" id="cfg-s3v"
-                value="Único" /></div>
-            <div><label class="config-label">Etiqueta 1</label><input class="config-input" type="text" id="cfg-s1l"
-                value="Años" /></div>
-            <div><label class="config-label">Etiqueta 2</label><input class="config-input" type="text" id="cfg-s2l"
-                value="Originales" /></div>
-            <div><label class="config-label">Etiqueta 3</label><input class="config-input" type="text" id="cfg-s3l"
-                value="Marca propia" /></div>
-          </div>
-          <button class="btn-dark" style="border-radius:99px;padding:.55rem 1.4rem;font-size:.7rem;letter-spacing:.08em"
-            onclick="Dash.saveNosotros()">Guardar Nosotros</button>
-        </div>
+            </section>
 
-        <div class="config-section">
-          <div class="config-section-title">🔥 Gestión de PROMOS</div>
-          <div class="config-hint" style="margin-bottom:.9rem">Configurá las fragancias disponibles, activá o desactivá cada promo y guardá los cambios.</div>
-          <button class="btn-outline" style="border-radius:99px;padding:.55rem 1.4rem;font-size:.7rem;margin-bottom:1rem" onclick="PromoAdmin.openNew()">+ Nueva promo</button>
-          <div id="promo-admin-list"></div>
-          <button class="btn-dark" style="border-radius:99px;padding:.55rem 1.4rem;font-size:.7rem" onclick="PromoAdmin.save()">Guardar cambios en promos</button>
+            <section class="config-panel" data-config-panel="catalogo">
+              <div class="config-section">
+                <div class="config-section-title">🗂 Categorías y subcategorías</div>
+                <div class="taxonomy-layout">
+                  <div class="tax-box">
+                    <label class="config-label">Agregar categoría</label>
+                    <div class="tax-row">
+                      <input class="config-input" type="text" id="tax-new-cat" placeholder="Ej: Cítricos" />
+                      <button class="btn-dark" type="button" onclick="Dash.addCategory()">Agregar</button>
+                    </div>
+                    <div class="tax-hint">Estas categorías alimentan filtros, inventario y alta de productos.</div>
+                    <div class="tax-list" id="tax-cat-list"></div>
+                  </div>
+                  <div class="tax-box">
+                    <label class="config-label">Agregar subcategoría</label>
+                    <div class="tax-row">
+                      <select class="config-input" id="tax-parent-cat"></select>
+                      <input class="config-input" type="text" id="tax-new-sub" placeholder="Ej: Ámbar" />
+                      <button class="btn-dark" type="button" onclick="Dash.addSubcategory()">Agregar</button>
+                    </div>
+                    <div class="tax-hint">Cada subcategoría queda vinculada a una categoría principal.</div>
+                    <div class="tax-list" id="tax-sub-list"></div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="config-section">
+                <div class="config-section-title">📦 Gestión del catálogo</div>
+                <div class="config-link-grid">
+                  <div class="config-link-card">
+                    <div class="config-link-title">Inventario y productos</div>
+                    <div class="config-link-text">La edición completa de productos, precios, stock, imágenes y disponibilidad sigue funcionando igual en la sección Inventario.</div>
+                    <button class="btn-dark" style="border-radius:99px;padding:.55rem 1.15rem;font-size:.68rem" type="button" onclick="Dash.goToSection('inventario')">Ir a Inventario</button>
+                  </div>
+                  <div class="config-link-card">
+                    <div class="config-link-title">Filtros y estructura del catálogo</div>
+                    <div class="config-link-text">Desde esta pestaña se conserva la organización de categorías y subcategorías que usa todo el sistema.</div>
+                    <button class="btn-outline" style="border-radius:99px;padding:.55rem 1.15rem;font-size:.68rem" type="button" onclick="Dash.renderTaxonomy()">Actualizar listas</button>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <section class="config-panel" data-config-panel="promociones">
+              <div class="config-section">
+                <div class="config-section-title">🔥 Gestión de promos</div>
+                <div class="config-hint" style="margin-bottom:.9rem">Configurá fragancias disponibles, activá o desactivá cada promo y guardá los cambios.</div>
+                <button class="btn-outline" style="border-radius:99px;padding:.55rem 1.4rem;font-size:.7rem;margin-bottom:1rem" onclick="PromoAdmin.openNew()">+ Nueva promo</button>
+                <div id="promo-admin-list"></div>
+                <button class="btn-dark" style="border-radius:99px;padding:.55rem 1.4rem;font-size:.7rem" onclick="PromoAdmin.save()">Guardar cambios en promos</button>
+              </div>
+
+              <div class="config-section">
+                <div class="config-section-title">📣 Banner comercial</div>
+                <div class="config-link-grid">
+                  <div class="config-link-card">
+                    <div class="config-link-title">Banner de tienda</div>
+                    <div class="config-link-text">El banner superior forma parte de la estrategia comercial y se mantiene dentro de Configuración.</div>
+                    <button class="btn-dark" style="border-radius:99px;padding:.55rem 1.15rem;font-size:.68rem" type="button" onclick="Dash.switchConfigTab('general')">Abrir pestaña General</button>
+                  </div>
+                  <div class="config-link-card">
+                    <div class="config-link-title">Promos aplicadas al carrito</div>
+                    <div class="config-link-text">Las promociones activas siguen impactando el carrito y los mensajes de WhatsApp sin recargar la página.</div>
+                    <button class="btn-outline" style="border-radius:99px;padding:.55rem 1.15rem;font-size:.68rem" type="button" onclick="PromoAdmin.render()">Refrescar promos</button>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <section class="config-panel" data-config-panel="pedidos">
+              <div class="config-section">
+                <div class="config-section-title">🚚 Dirección de retiro y entrega</div>
+                <div class="config-grid">
+                  <div class="config-full">
+                    <label class="config-label">Dirección del local *</label>
+                    <input class="config-input" type="text" id="cfg-dir" value="A coordinar" />
+                  </div>
+                  <div>
+                    <label class="config-label">Horarios</label>
+                    <input class="config-input" type="text" id="cfg-hs" value="Lun-Vie 10-19hs, Sáb 10-14hs" />
+                  </div>
+                  <div>
+                    <label class="config-label">Email de contacto</label>
+                    <input class="config-input" type="email" id="cfg-email" value="hola@aura.com" />
+                  </div>
+                </div>
+                <button class="btn-dark" style="margin-top:1rem;border-radius:99px;padding:.55rem 1.4rem;font-size:.7rem;letter-spacing:.08em" onclick="Dash.saveTienda()">Guardar tienda</button>
+              </div>
+
+              <div class="config-section">
+                <div class="config-section-title">🚚 Métodos de envío</div>
+                <div class="config-hint" style="margin-bottom:.9rem">Activá uno, el otro o ambos. Si ambos están activos, el cliente elige en el carrito.</div>
+                <div class="config-grid">
+                  <div>
+                    <label class="config-label" style="display:flex;align-items:center;justify-content:space-between;gap:.75rem">
+                      <span>Calculador por GPS</span>
+                      <input type="checkbox" id="cfg-ship-gps-on" />
+                    </label>
+                    <div class="config-hint">Usa ubicación o dirección y calcula por distancia.</div>
+                  </div>
+                  <div>
+                    <label class="config-label" style="display:flex;align-items:center;justify-content:space-between;gap:.75rem">
+                      <span>Zonas fijas</span>
+                      <input type="checkbox" id="cfg-ship-zone-on" />
+                    </label>
+                    <div class="config-hint">Cipolletti $1.500 · Neuquén $3.000 · Fernández Oro $3.000</div>
+                  </div>
+                  <div class="config-full">
+                    <button class="btn-dark" onclick="Dash.saveShippingMethods()">Guardar métodos de envío</button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="config-section">
+                <div class="config-section-title">🧾 Flujo de pedidos</div>
+                <div class="config-link-grid">
+                  <div class="config-link-card">
+                    <div class="config-link-title">Estados y confirmación</div>
+                    <div class="config-link-text">La confirmación, denegación y edición del pedido siguen operando desde la sección Pedidos del panel.</div>
+                    <button class="btn-dark" style="border-radius:99px;padding:.55rem 1.15rem;font-size:.68rem" type="button" onclick="Dash.goToSection('pedidos')">Ir a Pedidos</button>
+                  </div>
+                  <div class="config-link-card">
+                    <div class="config-link-title">Operación en tiempo real</div>
+                    <div class="config-link-text">El carrito, el registro de órdenes y el flujo de trabajo no cambian. Solo se reorganizó la interfaz de configuración.</div>
+                    <button class="btn-outline" style="border-radius:99px;padding:.55rem 1.15rem;font-size:.68rem" type="button" onclick="Dash.renderPedidos()">Refrescar pedidos</button>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <section class="config-panel" data-config-panel="ticket">
+              <div class="config-section">
+                <div class="config-section-title">📱 WhatsApp — Número de salida</div>
+                <div class="config-grid">
+                  <div>
+                    <label class="config-label">Número de WhatsApp *</label>
+                    <input class="config-input" type="text" id="cfg-wa-num" value="5492942444236" placeholder="549... sin espacios ni +" />
+                    <div class="config-hint">Código de país + número sin espacios ni signo +</div>
+                  </div>
+                  <div>
+                    <label class="config-label">Nombre de referencia</label>
+                    <input class="config-input" type="text" id="cfg-wa-name-ticket" value="AURA — Tienda Online" oninput="const t=document.getElementById('cfg-wa-name'); if(t) t.value=this.value" />
+                    <div class="config-hint">Se sincroniza con el nombre usado en la tienda.</div>
+                  </div>
+                </div>
+                <button class="btn-dark" style="margin-top:1rem;border-radius:99px;padding:.55rem 1.4rem;font-size:.7rem;letter-spacing:.08em" onclick="Dash.saveWA()">Guardar WhatsApp</button>
+              </div>
+
+              <div class="config-section">
+                <div class="config-section-title">🧾 Ticket / WhatsApp — Mensaje editable</div>
+                <div class="config-grid">
+                  <div>
+                    <label class="config-label">Template del mensaje</label>
+                    <textarea class="config-textarea" id="cfg-wa-template" style="min-height:320px" oninput="Dash.renderWATemplatePreview()"></textarea>
+                    <div class="config-hint">Podés editar texto libre y mantener variables dinámicas entre llaves.</div>
+                    <div class="config-vars">
+                      <span class="config-var-chip">{tienda}</span>
+                      <span class="config-var-chip">{pedido_id}</span>
+                      <span class="config-var-chip">{nombre}</span>
+                      <span class="config-var-chip">{telefono}</span>
+                      <span class="config-var-chip">{productos}</span>
+                      <span class="config-var-chip">{subtotal}</span>
+                      <span class="config-var-chip">{metodo_envio}</span>
+                      <span class="config-var-chip">{envio}</span>
+                      <span class="config-var-chip">{descuentos}</span>
+                      <span class="config-var-chip">{total}</span>
+                      <span class="config-var-chip">{direccion}</span>
+                      <span class="config-var-chip">{notas}</span>
+                    </div>
+                    <button class="btn-dark" style="margin-top:1rem;border-radius:99px;padding:.55rem 1.4rem;font-size:.7rem;letter-spacing:.08em" onclick="Dash.saveWATemplate()">Guardar mensaje</button>
+                  </div>
+                  <div>
+                    <label class="config-label">Vista previa en tiempo real</label>
+                    <div class="config-preview-box" id="cfg-wa-preview"></div>
+                    <div class="config-hint">Esta vista previa usa datos de ejemplo y el mismo motor que el envío real por WhatsApp.</div>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <section class="config-panel" data-config-panel="usuarios">
+              <div class="config-section">
+                <div class="config-section-title">👥 Usuarios / Personal</div>
+                <div class="config-link-grid">
+                  <div class="config-link-card">
+                    <div class="config-link-title">Acceso administrativo</div>
+                    <div class="config-link-text">El acceso del panel sigue funcionando desde la contraseña del staff y el comportamiento general del archivo no cambia.</div>
+                    <button class="btn-outline" style="border-radius:99px;padding:.55rem 1.15rem;font-size:.68rem" type="button" onclick="Dash.goToSection('clientes')">Ir a Clientes</button>
+                  </div>
+                  <div class="config-link-card">
+                    <div class="config-link-title">Roles y permisos</div>
+                    <div class="config-link-text">No existen controles avanzados de roles dentro de este archivo. Esta pestaña agrupa ese bloque para futuras ampliaciones sin mezclarlo con otras opciones.</div>
+                    <div class="config-hint" style="margin-top:0">Se conserva el funcionamiento actual.</div>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <section class="config-panel" data-config-panel="notificaciones">
+              <div class="config-section">
+                <div class="config-section-title">🔔 Notificaciones</div>
+                <div class="config-help-list">
+                  <div class="config-help-item">Las notificaciones actualmente dependen del flujo del carrito, del registro interno del pedido y del envío manual por WhatsApp.</div>
+                  <div class="config-help-item">No hay un módulo independiente de alertas automáticas en este archivo. Esta pestaña deja la estructura preparada sin alterar el comportamiento existente.</div>
+                  <div class="config-help-item">La nota del carrito y el mensaje editable de WhatsApp ya quedan centralizados en la pestaña Ticket / WhatsApp.</div>
+                </div>
+              </div>
+            </section>
+          </div>
         </div>
       </div>
     </main>
@@ -6829,7 +7120,7 @@
 
     const DEFAULT_HEATMAP = { hero: 18, filters: 11, productCard: 25, addToCart: 20, cart: 8, whatsapp: 7, nav: 6, about: 4 };
     const DEFAULT_STORE_CONFIG = {
-      waNum: '5492942444236', waName: 'AURA — Tienda Online', bannerText: 'Nueva colección Otoño/Invierno 2026 — Envío gratis (Cipolletti o Neuquén) en pedidos mayores a $50.000', bannerFg: '#C9A84C', bannerOn: true,
+      waNum: '5492942444236', waName: 'AURA — Tienda Online', waTemplate: `🌸 *Pedido {tienda}*\n\nPedido: {pedido_id}\nCliente: {nombre}{telefono}\n\n{productos}\n\nSubtotal: {subtotal}\nMétodo de envío: {metodo_envio}\nEnvío: {envio}{descuentos}\n*Total: {total}*\n\n📍 Dirección / zona: {direccion}{notas}`, bannerText: 'Nueva colección Otoño/Invierno 2026 — Envío gratis (Cipolletti o Neuquén) en pedidos mayores a $50.000', bannerFg: '#C9A84C', bannerOn: true,
       dir: 'A coordinar', hs: 'Lun-Vie 10-19hs, Sáb 10-14hs', email: 'hola@aura.com',
       shippingGpsEnabled: true, shippingZoneEnabled: false,
       shippingZones: [
@@ -6877,6 +7168,44 @@
     let TAXONOMY = loadTaxonomy();
     let HEATMAP = loadHeatmap();
     let STORE = loadStoreConfig();
+
+
+    function getDefaultWATemplate() {
+      return DEFAULT_STORE_CONFIG.waTemplate;
+    }
+
+    function buildWhatsAppMessageFromTemplate(template, data) {
+      const source = String(template || getDefaultWATemplate());
+      const safeData = { ...data };
+      return source.replace(/\{([a-z_]+)\}/gi, (full, key) => {
+        return Object.prototype.hasOwnProperty.call(safeData, key) ? String(safeData[key] ?? '') : full;
+      }).replace(/\n{3,}/g, '\n\n').trim();
+    }
+
+    function getWATemplateSampleData() {
+      return {
+        tienda: STORE?.waName || 'AURA — Tienda Online',
+        pedido_id: 'PED-123456',
+        nombre: 'Juan Pérez',
+        telefono: '\nTeléfono: 2991234567',
+        productos: '• Khamrah x1 — $50.000\n• 9pm x2 — $130.000',
+        subtotal: '$180.000',
+        metodo_envio: 'Zona fija',
+        envio: '$3.000',
+        descuentos: '\n💚 Descuento promo Combo Noche: −$10.000',
+        total: '$173.000',
+        direccion: 'Cipolletti',
+        notas: '\n📝 Notas: Entregar por la tarde'
+      };
+    }
+
+    function renderConfigWAPreview() {
+      const textarea = document.getElementById('cfg-wa-template');
+      const preview = document.getElementById('cfg-wa-preview');
+      if (!textarea || !preview) return;
+      const msg = buildWhatsAppMessageFromTemplate(textarea.value, getWATemplateSampleData());
+      preview.textContent = msg;
+    }
 
     const Cart = (() => {
       let items = []; let deliveryCost = 0; let selectedPos = null; let sugTimeout = null; let shippingMethod = '';
@@ -7120,7 +7449,7 @@
         refreshTotals();
       }
       function registerOrder(addr) { const customerName = document.getElementById('order-name').value.trim() || 'Cliente sin nombre'; const phone = document.getElementById('order-phone').value.trim() || 'Sin teléfono'; const notes = document.getElementById('order-notes').value.trim(); const order = { id: 'PED-' + Date.now().toString().slice(-6), customerName, phone, address: addr || 'No especificada', notes, shippingMethod: shippingMethod || 'coordinar', items: items.map(i => ({ id: i.id, name: i.name, qty: i.qty, price: i.price, size: i.size || '35 ml · EDP' })), subtotal: subtotal(), delivery: deliveryCost, total: total(), date: new Date().toISOString(), status: 'Pendiente de confirmación', channel: 'WhatsApp' }; ORDERS.unshift(order); saveOrdersLS(); upsertCustomerFromOrder(order); Dash.renderPedidos(); Dash.renderClientes(); Dash.updatePanelKPIs(); Dash.initAnalytics(); return order }
-      function confirmWhatsApp() { if (!items.length) return; const name = document.getElementById('order-name').value.trim(); if (!name) { showToast('Ingresá al menos el nombre del cliente.', true); return } const modes = getShippingModes(); const addr = (document.getElementById('cust-addr').value.trim()) || 'No especificada'; const phone = document.getElementById('order-phone').value.trim(); const notes = document.getElementById('order-notes').value.trim(); if ((modes.gps || modes.zone) && deliveryCost <= 0) { showToast('Seleccioná o calculá el envío.', true); return } const order = registerOrder(addr); const waNum = STORE.waNum || config.waNum || '5492942444236'; const itemsStr = items.map(i => `• ${i.name} x${i.qty} — $${(i.price * i.qty).toLocaleString('es-AR')}`).join('\n'); const envioLabel = shippingMethod === 'zone' ? 'Zona fija' : shippingMethod === 'gps' ? 'GPS' : 'A coordinar'; const envioStr = deliveryCost > 0 ? `$${deliveryCost.toLocaleString('es-AR')}` : 'A calcular'; const { discountLines } = getAppliedDiscounts(); const discountText = discountLines.map(({ promo, discount }) => `\n💚 Descuento promo ${promo.name}: −$${discount.saved.toLocaleString('es-AR')}`).join(''); const msg = encodeURIComponent(`🌸 *Pedido AURA*\n\nPedido: ${order.id}\nCliente: ${name}${phone ? `\nTeléfono: ${phone}` : ''}\n\n${itemsStr}\n\nSubtotal: $${subtotal().toLocaleString('es-AR')}\nMétodo de envío: ${envioLabel}\nEnvío: ${envioStr}${discountText}\n*Total: $${total().toLocaleString('es-AR')}*\n\n📍 Dirección / zona: ${addr}${notes ? `\n📝 Notas: ${notes}` : ''}`); window.open(`https://wa.me/${waNum}?text=${msg}`, '_blank'); items = []; resetShippingState(true); save(); document.getElementById('order-name').value = ''; document.getElementById('order-phone').value = ''; document.getElementById('order-notes').value = ''; close(); render() }
+      function confirmWhatsApp() { if (!items.length) return; const name = document.getElementById('order-name').value.trim(); if (!name) { showToast('Ingresá al menos el nombre del cliente.', true); return } const modes = getShippingModes(); const addr = (document.getElementById('cust-addr').value.trim()) || 'No especificada'; const phone = document.getElementById('order-phone').value.trim(); const notes = document.getElementById('order-notes').value.trim(); if ((modes.gps || modes.zone) && deliveryCost <= 0) { showToast('Seleccioná o calculá el envío.', true); return } const order = registerOrder(addr); const waNum = STORE.waNum || config.waNum || '5492942444236'; const itemsStr = items.map(i => `• ${i.name} x${i.qty} — $${(i.price * i.qty).toLocaleString('es-AR')}`).join('\n'); const envioLabel = shippingMethod === 'zone' ? 'Zona fija' : shippingMethod === 'gps' ? 'GPS' : 'A coordinar'; const envioStr = deliveryCost > 0 ? `$${deliveryCost.toLocaleString('es-AR')}` : 'A calcular'; const { discountLines } = getAppliedDiscounts(); const discountText = discountLines.map(({ promo, discount }) => `\n💚 Descuento promo ${promo.name}: −$${discount.saved.toLocaleString('es-AR')}`).join(''); const templateData = { tienda: STORE.waName || 'AURA — Tienda Online', pedido_id: order.id, nombre: name, telefono: phone ? `\nTeléfono: ${phone}` : '', productos: itemsStr, subtotal: `$${subtotal().toLocaleString('es-AR')}`, metodo_envio: envioLabel, envio: envioStr, descuentos: discountText, total: `$${total().toLocaleString('es-AR')}`, direccion: addr, notas: notes ? `\n📝 Notas: ${notes}` : '' }; const finalMessage = buildWhatsAppMessageFromTemplate(STORE.waTemplate || getDefaultWATemplate(), templateData); const msg = encodeURIComponent(finalMessage); window.open(`https://wa.me/${waNum}?text=${msg}`, '_blank'); items = []; resetShippingState(true); save(); document.getElementById('order-name').value = ''; document.getElementById('order-phone').value = ''; document.getElementById('order-notes').value = ''; close(); render() }
       load();
       return { open, close, addItem, updateQty, remove, total, count, items: () => items, onAddrInput, selectAddr, calcDelivery, confirmWhatsApp, closeSuggestions, selectShippingMethod, selectZone, updateCartBadge };
     })();
@@ -7615,7 +7944,46 @@
       },
       async saveProduct() { const name = document.getElementById('ap-name').value.trim(); const price = parseInt(document.getElementById('ap-price').value) || 0; if (!name || !price) { showToast('Completá el nombre y el precio.', true); return } const editId = document.getElementById('ap-edit-id').value; const existing = editId ? PRODUCTS.find(p => p.id === editId)?.images || [] : []; const prod = { id: editId || 'prod-' + Date.now(), name, cat: document.getElementById('ap-cat').value, cat2: document.getElementById('ap-cat2').value || '', price, stock: parseInt(document.getElementById('ap-stock').value) || 0, emoji: document.getElementById('ap-emoji').value || '🌸', badge: document.getElementById('ap-badge').value || null, desc: document.getElementById('ap-desc').value.trim() || 'Fragancia destacada de AURA.', size: document.getElementById('ap-size').value.trim() || '35 ml · EDP', images: await this.getProductImagesFromInputs(existing) }; if (editId) { const idx = PRODUCTS.findIndex(p => p.id === editId); if (idx >= 0) PRODUCTS[idx] = prod } else PRODUCTS.push(prod); saveProductsLS(); this.closeAddProduct(); this.renderInventory(); this.updatePanelKPIs(); renderProducts() },
       deleteProduct(id) { if (!window.confirm('¿Eliminar esta fragancia?')) return; PRODUCTS = PRODUCTS.filter(p => p.id !== id); saveProductsLS(); this.renderInventory(); this.updatePanelKPIs(); renderProducts() },
-      saveWA() { const num = document.getElementById('cfg-wa-num').value.trim(); if (!num) { showToast('Ingresá el número.', true); return } STORE.waNum = num; STORE.waName = document.getElementById('cfg-wa-name').value.trim() || STORE.waName; config.waNum = STORE.waNum; saveStoreConfig(); showToast('WhatsApp guardado ✓'); },
+      goToSection(section) {
+        const btn = [...document.querySelectorAll('.dash-nav-item')].find(el => (el.getAttribute('onclick') || '').includes(`'${section}'`));
+        if (btn) App.dashNav(btn, section);
+      },
+      initConfigTabs() {
+        const activeBtn = document.querySelector('#config-tabs-nav .config-tab.active') || document.querySelector('#config-tabs-nav .config-tab');
+        if (activeBtn) this.switchConfigTab(activeBtn.dataset.configTab || 'general', activeBtn);
+        renderConfigWAPreview();
+      },
+      switchConfigTab(tab, btn) {
+        document.querySelectorAll('#config-tabs-nav .config-tab').forEach(el => el.classList.toggle('active', el === btn || el.dataset.configTab === tab));
+        document.querySelectorAll('#sec-config .config-panel').forEach(el => el.classList.toggle('active', el.dataset.configPanel === tab));
+        if (tab === 'catalogo') this.renderTaxonomy();
+        if (tab === 'promociones') PromoAdmin.render();
+        if (tab === 'ticket') renderConfigWAPreview();
+      },
+      renderWATemplatePreview() { renderConfigWAPreview(); },
+      saveWATemplate() {
+        const textarea = document.getElementById('cfg-wa-template');
+        if (!textarea) return;
+        STORE.waTemplate = textarea.value.trim() || getDefaultWATemplate();
+        saveStoreConfig();
+        renderConfigWAPreview();
+        showToast('Mensaje de WhatsApp guardado ✓');
+      },
+      saveWA() {
+        const num = document.getElementById('cfg-wa-num')?.value.trim();
+        const generalNameInput = document.getElementById('cfg-wa-name');
+        const ticketNameInput = document.getElementById('cfg-wa-name-ticket');
+        const rawName = (generalNameInput?.value || ticketNameInput?.value || '').trim();
+        if (!num) { showToast('Ingresá el número.', true); return }
+        STORE.waNum = num;
+        STORE.waName = rawName || STORE.waName;
+        if (generalNameInput) generalNameInput.value = STORE.waName;
+        if (ticketNameInput) ticketNameInput.value = STORE.waName;
+        config.waNum = STORE.waNum;
+        saveStoreConfig();
+        renderConfigWAPreview();
+        showToast('WhatsApp guardado ✓');
+      },
       applyBanner() { STORE.bannerText = document.getElementById('cfg-banner-txt').value; STORE.bannerFg = document.getElementById('cfg-banner-fg').value; STORE.bannerOn = document.getElementById('cfg-banner-on').checked; saveStoreConfig(); applyStoreConfig(); showToast('Banner aplicado ✓') },
       saveTienda() { STORE.dir = document.getElementById('cfg-dir').value; STORE.hs = document.getElementById('cfg-hs').value; STORE.email = document.getElementById('cfg-email').value; saveStoreConfig(); showToast('Cambios guardados ✓') },
       saveShippingMethods() {
@@ -7648,7 +8016,15 @@
     };
 
     function applyStoreConfig() {
-      document.getElementById('cfg-wa-num').value = STORE.waNum; document.getElementById('cfg-wa-name').value = STORE.waName; document.getElementById('cfg-banner-txt').value = STORE.bannerText; document.getElementById('cfg-banner-fg').value = STORE.bannerFg; document.getElementById('cfg-banner-on').checked = !!STORE.bannerOn; document.getElementById('cfg-dir').value = STORE.dir; document.getElementById('cfg-hs').value = STORE.hs; document.getElementById('cfg-email').value = STORE.email; if (document.getElementById('cfg-ship-gps-on')) document.getElementById('cfg-ship-gps-on').checked = STORE.shippingGpsEnabled !== false; if (document.getElementById('cfg-ship-zone-on')) document.getElementById('cfg-ship-zone-on').checked = !!STORE.shippingZoneEnabled; document.getElementById('cfg-hero-enc').value = STORE.heroEnc; document.getElementById('cfg-hero-title').value = STORE.heroTitle; document.getElementById('cfg-hero-sub').value = STORE.heroSub; if (document.getElementById('cfg-hero-extra')) document.getElementById('cfg-hero-extra').value = STORE.heroExtra || ''; if (document.getElementById('cfg-hero-enc-on')) document.getElementById('cfg-hero-enc-on').checked = STORE.heroEncOn !== false; if (document.getElementById('cfg-hero-title-on')) document.getElementById('cfg-hero-title-on').checked = STORE.heroTitleOn !== false; if (document.getElementById('cfg-hero-sub-on')) document.getElementById('cfg-hero-sub-on').checked = STORE.heroSubOn !== false; if (document.getElementById('cfg-hero-extra-on')) document.getElementById('cfg-hero-extra-on').checked = !!STORE.heroExtraOn; if (document.getElementById('cfg-hero-logo-on')) document.getElementById('cfg-hero-logo-on').checked = !!STORE.heroLogoOn; const ann = document.getElementById('store-announce'); ann.textContent = STORE.heroEnc || STORE.bannerText; ann.style.color = STORE.bannerFg; ann.style.display = (STORE.bannerOn && STORE.heroEncOn !== false) ? '' : 'none'; const heroTitle = document.getElementById('store-hero-title'); if (heroTitle) { heroTitle.innerHTML = buildHeroTitle(STORE.heroTitle); heroTitle.style.display = STORE.heroTitleOn !== false ? '' : 'none' } const heroSub = document.getElementById('store-hero-sub'); if (heroSub) { heroSub.textContent = STORE.heroSub; heroSub.style.display = STORE.heroSubOn !== false ? '' : 'none' } const heroExtra = document.getElementById('store-hero-extra'); if (heroExtra) { heroExtra.textContent = STORE.heroExtra || ''; heroExtra.style.display = (STORE.heroExtraOn && STORE.heroExtra) ? '' : 'none' } const heroLogoEl = document.getElementById('store-hero-logo'); if (heroLogoEl) { if (STORE.heroLogo && STORE.heroLogoOn) { heroLogoEl.src = STORE.heroLogo; heroLogoEl.style.display = ''; const logoPreview = document.getElementById('hero-logo-preview'); if (logoPreview) { logoPreview.style.backgroundImage = `url('${STORE.heroLogo}')`; logoPreview.textContent = '' } } else { heroLogoEl.style.display = 'none'; heroLogoEl.src = '' } }
+      const cfgWaNum = document.getElementById('cfg-wa-num');
+      const cfgWaName = document.getElementById('cfg-wa-name');
+      const cfgWaNameTicket = document.getElementById('cfg-wa-name-ticket');
+      const cfgWaTemplate = document.getElementById('cfg-wa-template');
+      if (cfgWaNum) cfgWaNum.value = STORE.waNum;
+      if (cfgWaName) cfgWaName.value = STORE.waName;
+      if (cfgWaNameTicket) cfgWaNameTicket.value = STORE.waName;
+      if (cfgWaTemplate) cfgWaTemplate.value = STORE.waTemplate || getDefaultWATemplate();
+ document.getElementById('cfg-banner-txt').value = STORE.bannerText; document.getElementById('cfg-banner-fg').value = STORE.bannerFg; document.getElementById('cfg-banner-on').checked = !!STORE.bannerOn; document.getElementById('cfg-dir').value = STORE.dir; document.getElementById('cfg-hs').value = STORE.hs; document.getElementById('cfg-email').value = STORE.email; if (document.getElementById('cfg-ship-gps-on')) document.getElementById('cfg-ship-gps-on').checked = STORE.shippingGpsEnabled !== false; if (document.getElementById('cfg-ship-zone-on')) document.getElementById('cfg-ship-zone-on').checked = !!STORE.shippingZoneEnabled; document.getElementById('cfg-hero-enc').value = STORE.heroEnc; document.getElementById('cfg-hero-title').value = STORE.heroTitle; document.getElementById('cfg-hero-sub').value = STORE.heroSub; if (document.getElementById('cfg-hero-extra')) document.getElementById('cfg-hero-extra').value = STORE.heroExtra || ''; if (document.getElementById('cfg-hero-enc-on')) document.getElementById('cfg-hero-enc-on').checked = STORE.heroEncOn !== false; if (document.getElementById('cfg-hero-title-on')) document.getElementById('cfg-hero-title-on').checked = STORE.heroTitleOn !== false; if (document.getElementById('cfg-hero-sub-on')) document.getElementById('cfg-hero-sub-on').checked = STORE.heroSubOn !== false; if (document.getElementById('cfg-hero-extra-on')) document.getElementById('cfg-hero-extra-on').checked = !!STORE.heroExtraOn; if (document.getElementById('cfg-hero-logo-on')) document.getElementById('cfg-hero-logo-on').checked = !!STORE.heroLogoOn; const ann = document.getElementById('store-announce'); ann.textContent = STORE.heroEnc || STORE.bannerText; ann.style.color = STORE.bannerFg; ann.style.display = (STORE.bannerOn && STORE.heroEncOn !== false) ? '' : 'none'; const heroTitle = document.getElementById('store-hero-title'); if (heroTitle) { heroTitle.innerHTML = buildHeroTitle(STORE.heroTitle); heroTitle.style.display = STORE.heroTitleOn !== false ? '' : 'none' } const heroSub = document.getElementById('store-hero-sub'); if (heroSub) { heroSub.textContent = STORE.heroSub; heroSub.style.display = STORE.heroSubOn !== false ? '' : 'none' } const heroExtra = document.getElementById('store-hero-extra'); if (heroExtra) { heroExtra.textContent = STORE.heroExtra || ''; heroExtra.style.display = (STORE.heroExtraOn && STORE.heroExtra) ? '' : 'none' } const heroLogoEl = document.getElementById('store-hero-logo'); if (heroLogoEl) { if (STORE.heroLogo && STORE.heroLogoOn) { heroLogoEl.src = STORE.heroLogo; heroLogoEl.style.display = ''; const logoPreview = document.getElementById('hero-logo-preview'); if (logoPreview) { logoPreview.style.backgroundImage = `url('${STORE.heroLogo}')`; logoPreview.textContent = '' } } else { heroLogoEl.style.display = 'none'; heroLogoEl.src = '' } }
       /* Nav logo: if logo image configured, show it in nav too */
       const navLogo = document.getElementById('store-logo-nav');
       if (navLogo) { if (STORE.heroLogo && STORE.heroLogoOn) { navLogo.innerHTML = `<img src="${STORE.heroLogo}" alt="AURA" style="height:26px;width:auto;object-fit:contain;opacity:.9"/>`; } else if (!navLogo.querySelector('img') || STORE.heroLogo === '' || !STORE.heroLogoOn) { navLogo.innerHTML = 'AURA <span class="store-logo-dot"></span>'; } }
@@ -7672,6 +8048,7 @@
       // Populate URL input fields
       const cfgPortalUrl = document.getElementById('cfg-portal-img-url'); if (cfgPortalUrl && STORE.portalImg && !STORE.portalImg.startsWith('data:')) cfgPortalUrl.value = STORE.portalImg;
       const cfgHeroBgUrl = document.getElementById('cfg-hero-bg-url'); if (cfgHeroBgUrl && STORE.heroBg && !STORE.heroBg.startsWith('data:')) cfgHeroBgUrl.value = STORE.heroBg;
+renderConfigWAPreview();
 /* portal bg now handled by portalImg field */config.waNum = STORE.waNum
     }
 
@@ -7690,7 +8067,7 @@
       goStore() { this.show('s-store'); setTimeout(() => { const st = document.getElementById('s-store'); if (st) st.scrollTo({ top: 0, behavior: 'instant' }) }, 30) },
       staffLogin() { const pwd = document.getElementById('staff-pwd').value.trim(); if (pwd === 'piromagu2026') { this.show('s-dashboard') } else { document.getElementById('staff-pwd').style.borderColor = '#ef4444'; setTimeout(() => document.getElementById('staff-pwd').style.borderColor = '', 1200) } },
       togglePwd() { const inp = document.getElementById('staff-pwd'); inp.type = inp.type === 'password' ? 'text' : 'password' },
-      dashNav(btn, section) { document.querySelectorAll('.dash-nav-item').forEach(b => b.classList.remove('active')); btn.classList.add('active');['panel', 'inventario', 'pedidos', 'clientes', 'analiticas', 'config'].forEach(s => { const el = document.getElementById('sec-' + s); if (el) el.style.display = s === section ? '' : 'none' }); if (section === 'inventario') Dash.renderInventory(); else if (section === 'pedidos') Dash.renderPedidos(); else if (section === 'clientes') Dash.renderClientes(); else if (section === 'analiticas') setTimeout(() => Dash.initAnalytics(), 80); else if (section === 'config') setTimeout(() => { Dash.renderTaxonomy(); PromoAdmin.render() }, 50) },
+      dashNav(btn, section) { document.querySelectorAll('.dash-nav-item').forEach(b => b.classList.remove('active')); if (btn) btn.classList.add('active');['panel', 'inventario', 'pedidos', 'clientes', 'analiticas', 'config'].forEach(s => { const el = document.getElementById('sec-' + s); if (el) el.style.display = s === section ? '' : 'none' }); if (section === 'inventario') Dash.renderInventory(); else if (section === 'pedidos') Dash.renderPedidos(); else if (section === 'clientes') Dash.renderClientes(); else if (section === 'analiticas') setTimeout(() => Dash.initAnalytics(), 80); else if (section === 'config') setTimeout(() => { Dash.renderTaxonomy(); PromoAdmin.render(); Dash.initConfigTabs(); }, 50) },
       chartPeriod(p, btn) { document.querySelectorAll('.chart-tab').forEach(b => b.classList.remove('active')); btn.classList.add('active'); initChart(p) },
       filter(btn) { document.querySelectorAll('.chip').forEach(c => c.classList.remove('active')); btn.classList.add('active'); currentFilter = btn.dataset.cat; trackZone('filters'); renderProducts() },
       search(q) { currentSearch = q; renderProducts() },
