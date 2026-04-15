@@ -3042,10 +3042,63 @@
       font-size: 1rem;
       font-weight: 600;
       color: var(--text);
-      margin-bottom: 1rem;
+      margin: 0;
       display: flex;
       align-items: center;
       gap: .5rem
+    }
+
+    .config-section.is-accordion {
+      padding: 0;
+      overflow: hidden;
+    }
+
+    .config-section-toggle {
+      width: 100%;
+      border: none;
+      background: transparent;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      padding: 1.15rem 1.25rem;
+      text-align: left;
+      color: var(--text);
+    }
+
+    .config-section-toggle:hover {
+      background: rgba(15, 23, 42, .02);
+    }
+
+    .config-section-toggle-text {
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+      min-width: 0;
+      flex: 1;
+    }
+
+    .config-section-arrow {
+      flex-shrink: 0;
+      font-size: .9rem;
+      color: var(--muted);
+      transition: transform var(--trans), color var(--trans);
+      transform: rotate(0deg);
+    }
+
+    .config-section.is-open .config-section-arrow {
+      transform: rotate(180deg);
+      color: var(--text);
+    }
+
+    .config-section-body {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height .32s cubic-bezier(.22, 1, .36, 1);
+    }
+
+    .config-section-inner {
+      padding: 0 1.25rem 1.25rem;
     }
 
     .config-grid {
@@ -6850,16 +6903,14 @@
         </svg>
         Inicio
       </button>
-      <!-- COLECCIÓN -->
+      <!-- PROMOS -->
       <button class="mob-nav-btn" id="mob-nav-col"
         onclick="MobNav.goColeccion(this)">
         <svg class="mob-nav-icon" viewBox="0 0 24 24" aria-hidden="true">
-          <rect x="3" y="3" width="7" height="7" rx="1"/>
-          <rect x="14" y="3" width="7" height="7" rx="1"/>
-          <rect x="3" y="14" width="7" height="7" rx="1"/>
-          <rect x="14" y="14" width="7" height="7" rx="1"/>
+          <path d="M20.6 13.4 12.9 21a2 2 0 0 1-2.8 0L3 13.9V4h9.9l7.7 7.1a1.6 1.6 0 0 1 0 2.3z"/>
+          <circle cx="8" cy="8" r="1.5"/>
         </svg>
-        Colección
+        Promos
       </button>
       <!-- PARA VOS -->
       <button class="mob-nav-btn" id="mob-nav-sug"
@@ -8051,6 +8102,7 @@
         if (btn) App.dashNav(btn, section);
       },
       initConfigTabs() {
+        initConfigAccordions();
         const activeBtn = document.querySelector('#config-tabs-nav .config-tab.active') || document.querySelector('#config-tabs-nav .config-tab');
         if (activeBtn) this.switchConfigTab(activeBtn.dataset.configTab || 'general', activeBtn);
         renderConfigWAPreview();
@@ -8058,9 +8110,11 @@
       switchConfigTab(tab, btn) {
         document.querySelectorAll('#config-tabs-nav .config-tab').forEach(el => el.classList.toggle('active', el === btn || el.dataset.configTab === tab));
         document.querySelectorAll('#sec-config .config-panel').forEach(el => el.classList.toggle('active', el.dataset.configPanel === tab));
+        collapseConfigPanel(tab);
         if (tab === 'catalogo') this.renderTaxonomy();
         if (tab === 'promociones') PromoAdmin.render();
         if (tab === 'ticket') renderConfigWAPreview();
+        requestAnimationFrame(() => refreshConfigAccordionHeights());
       },
       renderWATemplatePreview() { renderConfigWAPreview(); },
       saveWATemplate() {
@@ -8163,6 +8217,96 @@ renderConfigWAPreview();
       t._timer = setTimeout(() => { t.className = t.className.replace(' show', '').replace('show', '') }, 2400);
     }
 
+
+    function initConfigAccordions() {
+      const panels = document.querySelectorAll('#sec-config .config-panel');
+      panels.forEach(panel => {
+        panel.querySelectorAll(':scope > .config-section').forEach((section, index) => {
+          if (section.dataset.accordionReady === '1') return;
+          const title = section.querySelector(':scope > .config-section-title');
+          if (!title) return;
+
+          const body = document.createElement('div');
+          body.className = 'config-section-body';
+          const inner = document.createElement('div');
+          inner.className = 'config-section-inner';
+
+          const nodes = Array.from(section.childNodes);
+          nodes.forEach(node => {
+            if (node !== title) inner.appendChild(node);
+          });
+          body.appendChild(inner);
+
+          const toggle = document.createElement('button');
+          toggle.type = 'button';
+          toggle.className = 'config-section-toggle';
+          toggle.setAttribute('aria-expanded', 'false');
+          toggle.innerHTML = `<span class="config-section-toggle-text">${title.outerHTML}</span><span class="config-section-arrow">▼</span>`;
+          toggle.addEventListener('click', () => toggleConfigSection(section));
+
+          section.innerHTML = '';
+          section.classList.add('is-accordion');
+          section.dataset.accordionReady = '1';
+          section.dataset.panel = panel.dataset.configPanel || '';
+          section.dataset.index = String(index);
+          section.appendChild(toggle);
+          section.appendChild(body);
+        });
+      });
+      refreshConfigAccordionHeights();
+    }
+
+    function refreshConfigAccordionHeights() {
+      document.querySelectorAll('#sec-config .config-section.is-accordion').forEach(section => {
+        const body = section.querySelector('.config-section-body');
+        const inner = section.querySelector('.config-section-inner');
+        if (!body || !inner) return;
+        body.style.maxHeight = section.classList.contains('is-open') ? inner.scrollHeight + 'px' : '0px';
+      });
+    }
+
+    function collapseConfigPanel(panelName) {
+      const panel = document.querySelector(`#sec-config .config-panel[data-config-panel="${panelName}"]`);
+      if (!panel) return;
+      panel.querySelectorAll('.config-section.is-accordion').forEach(section => closeConfigSection(section));
+      refreshConfigAccordionHeights();
+    }
+
+    function closeConfigSection(section) {
+      if (!section) return;
+      section.classList.remove('is-open');
+      const toggle = section.querySelector('.config-section-toggle');
+      const body = section.querySelector('.config-section-body');
+      if (toggle) toggle.setAttribute('aria-expanded', 'false');
+      if (body) body.style.maxHeight = '0px';
+    }
+
+    function openConfigSection(section) {
+      if (!section) return;
+      const panel = section.closest('.config-panel');
+      if (panel) {
+        panel.querySelectorAll('.config-section.is-accordion').forEach(other => {
+          if (other !== section) closeConfigSection(other);
+        });
+      }
+      section.classList.add('is-open');
+      const toggle = section.querySelector('.config-section-toggle');
+      const body = section.querySelector('.config-section-body');
+      const inner = section.querySelector('.config-section-inner');
+      if (toggle) toggle.setAttribute('aria-expanded', 'true');
+      if (body && inner) body.style.maxHeight = inner.scrollHeight + 'px';
+    }
+
+    function toggleConfigSection(section) {
+      if (!section) return;
+      if (section.classList.contains('is-open')) {
+        closeConfigSection(section);
+      } else {
+        openConfigSection(section);
+      }
+      refreshConfigAccordionHeights();
+    }
+
     const App = {
       show(id) { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); const el = document.getElementById(id); if (el) el.classList.add('active'); if (id === 's-dashboard') { setTimeout(() => { initChart(); Dash.renderInventory(); Dash.renderPedidos(); Dash.renderClientes(); Dash.updatePanelKPIs(); Dash.renderTaxonomy(); PromoAdmin.render() }, 80) } if (id === 's-store') { renderProducts(); applyStoreConfig() } window.scrollTo(0, 0) },
       goStaff() { this.show('s-staff-gate'); document.getElementById('staff-pwd').focus() },
@@ -8190,6 +8334,8 @@ renderConfigWAPreview();
       Dash.renderTaxonomy();
       PromoAdmin.render();
       Dash.updatePanelKPIs();
+      initConfigAccordions();
+      window.addEventListener('resize', refreshConfigAccordionHeights);
       document.getElementById('ap-cat')?.addEventListener('change', () => Dash.syncSubcategorySelect());
       document.querySelectorAll('[data-click-zone]').forEach(el => el.addEventListener('click', e => trackZone(e.currentTarget.dataset.clickZone)));
       document.querySelector('.store-nav')?.addEventListener('click', () => trackZone('nav'));
@@ -8550,8 +8696,8 @@ const MobNav = (() => {
   }
 
   function goHome(btn) {
-    // Si estamos en la vista de sugerencias, volvemos a la tienda primero
     SugCenter.closeTab();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
     const screen = document.getElementById('s-store');
     if (screen) screen.scrollTo({ top: 0, behavior: 'smooth' });
     _setActive('mob-nav-home');
