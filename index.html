@@ -6904,8 +6904,8 @@
         Inicio
       </button>
       <!-- PROMOS -->
-      <button class="mob-nav-btn" id="mob-nav-col"
-        onclick="MobNav.goColeccion(this)">
+      <button class="mob-nav-btn" id="mob-nav-promos"
+        onclick="MobNav.goPromos(this)">
         <svg class="mob-nav-icon" viewBox="0 0 24 24" aria-hidden="true">
           <path d="M20.6 13.4 12.9 21a2 2 0 0 1-2.8 0L3 13.9V4h9.9l7.7 7.1a1.6 1.6 0 0 1 0 2.3z"/>
           <circle cx="8" cy="8" r="1.5"/>
@@ -8349,12 +8349,18 @@ renderConfigWAPreview();
           const prodTop = document.getElementById('product-grid')?.offsetTop || 999;
           const scrollY = storeScreen.scrollTop;
           const homeBtn = document.getElementById('mob-nav-home');
-          const colBtn = document.getElementById('mob-nav-col');
-          if (!homeBtn || !colBtn) return;
+          const promosBtn = document.getElementById('mob-nav-promos');
+          if (!homeBtn || !promosBtn) return;
           if (scrollY < prodTop - 120) {
-            homeBtn.classList.add('active'); colBtn.classList.remove('active');
+            homeBtn.classList.add('active'); promosBtn.classList.remove('active');
           } else {
-            colBtn.classList.add('active'); homeBtn.classList.remove('active');
+            if (currentFilter === 'promos') {
+              promosBtn.classList.add('active');
+              homeBtn.classList.remove('active');
+            } else {
+              homeBtn.classList.add('active');
+              promosBtn.classList.remove('active');
+            }
           }
         }, { passive: true });
       }
@@ -8703,12 +8709,19 @@ const MobNav = (() => {
     _setActive('mob-nav-home');
   }
 
-  function goColeccion(btn) {
+  function goPromos(btn) {
     SugCenter.closeTab();
+    currentFilter = 'promos';
+    renderProducts();
+    const promosChip = document.querySelector('.chip[data-cat="promos"]');
+    if (promosChip) {
+      document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+      promosChip.classList.add('active');
+    }
     const grid = document.getElementById('product-grid');
     const screen = document.getElementById('s-store');
     if (grid && screen) screen.scrollTo({ top: grid.offsetTop - 80, behavior: 'smooth' });
-    _setActive('mob-nav-col');
+    _setActive('mob-nav-promos');
   }
 
   function goSugerencias(btn) {
@@ -8732,8 +8745,8 @@ const MobNav = (() => {
       entries.forEach(entry => {
         if (!entry.isIntersecting) return;
         const id = entry.target.id;
-        if (id === 'store-hero')    _setActive('mob-nav-home');
-        if (id === 'product-grid')  _setActive('mob-nav-col');
+        if (id === 'store-hero') _setActive('mob-nav-home');
+        if (id === 'product-grid') _setActive(currentFilter === 'promos' ? 'mob-nav-promos' : 'mob-nav-home');
       });
     }, {
       root: screen,
@@ -8757,7 +8770,7 @@ const MobNav = (() => {
     setTimeout(_initObserver, 400);
   }
 
-  return { goHome, goColeccion, goSugerencias, goCarrito };
+  return { goHome, goPromos, goSugerencias, goCarrito };
 })();
 /* FIN — MobNav */
 </script>
