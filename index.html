@@ -9271,25 +9271,152 @@ const SugCenter = (() => {
   // Cada array es una familia de perfumes relacionados.
   // Cualquier elemento puede ser el punto de entrada; se sugieren los demás.
   const gruposSugerencias = [
-    ['Erba Pura 35ml', 'amber oud'],
-    ['9pm 35ml', '9am Dive 35ml', '9am 35ml'],
-    ['Hawas Ice 35ml', 'Odyssey Aqua 35ml', 'Odyssey Limoni 35ml'],
-    ['Fakhar Black 35ml', 'Club de Nuit Sillage 35ml'],
-    ['Khamrah Qahwa 35ml', 'Asad Bourbon 35ml', 'Raghba 35ml'],
-    ['Yara 35ml', 'Noble Blush 35ml', 'Odyssey Candee 35ml'],
-    ['Yara Moi 35ml', 'Fakhar Rose 35ml', 'Club de Nuit Woman 35ml'],
-    ["Asad 35ml", "Bade'e al Oud for Glory 35ml", 'Hawas Fire 35ml'],
-    ["Yum Yum 35ml", "Bade'e al Oud 35ml", 'Berry on Top 35ml'],
-    ['Xerjoff Soprano 35ml', 'Xerjoff Opera', "Bade'e al Oud Amethyst 35ml"],
-    ["Bade'e al Oud Honor & Glory 35ml", 'Club de Nuit Milestone 35ml', 'Whipped Pleasure 35ml'],
-    ['Asad Zanzibar 35ml', 'Qaed al Fursan Unlimited 35ml'],
-    ['Khamrah 250ml', 'Khamrah Qahwa 250ml', 'Raghba 250ml'],
-    ['Club de Nuit Intense Man 250ml', 'Fakhar Black 250ml'],
-    ['Yara Moi 250ml', 'Fakhar Rose 250ml'],
-    ['Yara 250ml', 'Yara Candy 250ml'],
-    ['Khamrah 100ml', 'Khamrah Qahwa 100ml', 'Liquid Brun 100ml'],
-    ['Liquid Brun 100ml', 'Asad Bourbon 100ml'],
-    ['Yara 100ml', 'Odyssey Candee 100ml'],
+      [
+          "Xerjoff Erba Pura 35ml",
+          "Amber Oud Gold Edition 35ml",
+          "Xerjoff Coro 35ml"
+      ],
+      [
+          "Fakhar Rose 35ml",
+          "Victoria 35ml",
+          "Her Confession 35ml"
+      ],
+      [
+          "Club de Nuit Intense Man 35ml",
+          "Qaed al Fursan 35ml",
+          "Creed Aventus"
+      ],
+      [
+          "Hawas Ice 35ml",
+          "9am Dive 35ml",
+          "9am 35ml",
+          "Odyssey Limoni 35ml",
+          "Vulcan Black 35ml",
+          "Vulcan Feu 35ml",
+          "Jean Paul Gaultier Ultra Male"
+      ],
+      [
+          "9pm 35ml",
+          "Odyssey Spectra 35ml"
+      ],
+      [
+          "Club de Nuit Untold 35ml",
+          "Amber Oud Ultra 35ml"
+      ],
+      [
+          "Eclaire 35ml",
+          "Eclaire Pistache 35ml",
+          "Whipped Pleasure 35ml",
+          "Mallow Madness 35ml",
+          "Vanilla Freak 35ml",
+          "Berry on Top 35ml",
+          "Paco Rabanne Invictus / Invictus Aqua"
+      ],
+      [
+          "Fakhar Black 35ml",
+          "Club de Nuit Sillage 35ml",
+          "Odyssey Mega 35ml",
+          "Yves Saint Laurent Y EDP"
+      ],
+      [
+          "Khamrah Qahwa 35ml",
+          "Asad Bourbon 35ml",
+          "Raghba 35ml",
+          "Sehr 35ml",
+          "His Confession 35ml",
+          "Kilian Angels’ Share"
+      ],
+      [
+          "Odyssey Dubai Chocolat 35ml",
+          "Choco Overdose 35ml",
+          "Asad Bourbon 35ml",
+          "Khamrah Qahwa 35ml"
+      ],
+      [
+          "Yara 35ml",
+          "Noble Blush 35ml",
+          "Odyssey Candee 35ml",
+          "Club de Nuit Woman 35ml",
+          "Vulcan Baie 35ml",
+          "Ariana Grande Cloud / Sol de Janeiro Cheirosa 62"
+      ],
+      [
+          "Yara Moi 35ml",
+          "Fakhar Rose 35ml",
+          "Club de Nuit Woman 35ml",
+          "Fakhar Gold Extrait 35ml",
+          "Atheeri 35ml",
+          "Givenchy L’Interdit"
+      ],
+      [
+          "Yara Tous 35ml",
+          "Island Bliss 35ml"
+      ],
+      [
+          "Asad 35ml",
+          "Bade’e al Oud for Glory 35ml",
+          "Hawas Fire 35ml",
+          "Dior Sauvage Elixir"
+      ],
+      [
+          "Yum Yum 35ml",
+          "Bade’e al Oud Noble Blush 35ml",
+          "Berry on Top 35ml"
+      ],
+      [
+          "Xerjoff Soprano 35ml",
+          "Xerjoff Opera",
+          "Bade’e al Oud Amethyst 35ml",
+          "Initio Atomic Rose"
+      ],
+      [
+          "Bade’e al Oud Honor & Glory 35ml",
+          "Club de Nuit Milestone 35ml",
+          "Whipped Pleasure 35ml"
+      ],
+      [
+          "Asad Zanzibar 35ml",
+          "Qaed al Fursan Unlimited 35ml",
+          "Amber Oud White Edition 35ml",
+          "Vulcan Sable 35ml"
+      ],
+      [
+          "Khamrah 250ml",
+          "Khamrah Qahwa 250ml",
+          "Raghba 250ml",
+          "Kilian Angels’ Share"
+      ],
+      [
+          "Club de Nuit Intense Man 250ml",
+          "Fakhar Black 250ml",
+          "Creed Aventus"
+      ],
+      [
+          "Yara Moi 250ml",
+          "Fakhar Rose 250ml",
+          "Givenchy L’Interdit"
+      ],
+      [
+          "Yara 250ml",
+          "Yara Candy 250ml",
+          "Ariana Grande Cloud / Sol de Janeiro Cheirosa 62"
+      ],
+      [
+          "Khamrah 100ml",
+          "Khamrah Qahwa 100ml",
+          "Liquid Brun 100ml",
+          "Kilian Angels’ Share"
+      ],
+      [
+          "Liquid Brun 100ml",
+          "Asad Bourbon 100ml",
+          "Parfums de Marly Althaïr"
+      ],
+      [
+          "Yara 100ml",
+          "Odyssey Candee 100ml",
+          "Ariana Grande Cloud / Sol de Janeiro Cheirosa 62"
+      ]
   ];
 
   // Corpus plano: cada entrada tiene el nombre del perfume + índice de su grupo
