@@ -1847,6 +1847,30 @@
       object-fit: cover
     }
 
+
+    .img-box,
+    .prod-thumb {
+      position: relative;
+      overflow: hidden;
+    }
+
+    .ribbon {
+      position: absolute;
+      top: 18px;
+      right: -26px;
+      width: 110px;
+      background: #b84040;
+      color: #f9e5e5;
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 0.08em;
+      text-align: center;
+      padding: 4px 0;
+      transform: rotate(45deg);
+      z-index: 6;
+      pointer-events: none;
+    }
+
     .prod-carousel {
       position: relative;
       width: 100%;
@@ -8014,7 +8038,9 @@
       grid.innerHTML = list.length ? list.map((p, idx) => {
         const thumbContent = buildProductCardCarousel(p, idx);
         const isFav = typeof Favorites !== 'undefined' && Favorites.has(p.id);
-        return `<div class="prod-card" onclick="App.openProductDetail('${p.id}')" data-click-zone="productCard"><div class="prod-thumb">${thumbContent}${p.badge ? `<span class="prod-badge">${escapeHtml(p.badge)}</span>` : ''}<button class="prod-heart${isFav ? ' liked' : ''}" data-pid="${p.id}" onclick="event.stopPropagation();Favorites.toggle('${p.id}',this)" title="Favorito">♡</button></div><div class="prod-body"><div class="prod-cat">${escapeHtml(getCategoryName(p.cat))} / ${escapeHtml(getSubcategoryName(p.cat2))}</div><div class="prod-name">${escapeHtml(p.name)}</div><div class="prod-size">${escapeHtml(p.size || '35 ml · EDP')}</div><div class="prod-footer"><span class="prod-price">$${p.price.toLocaleString('es-AR')}</span><button class="prod-atc" onclick="event.stopPropagation();Cart.addItem(PRODUCTS.find(x=>x.id==='${p.id}'))">+ Añadir</button></div></div></div>`;
+        const isSinStock = typeof p.stock === 'number' && p.stock <= 0;
+        const ribbon = isSinStock ? '<div class="ribbon">Sin stock</div>' : '';
+        return `<div class="prod-card${isSinStock ? ' sin-stock' : ''}" onclick="App.openProductDetail('${p.id}')" data-click-zone="productCard"><div class="prod-thumb img-box">${thumbContent}${ribbon}${p.badge ? `<span class="prod-badge">${escapeHtml(p.badge)}</span>` : ''}<button class="prod-heart${isFav ? ' liked' : ''}" data-pid="${p.id}" onclick="event.stopPropagation();Favorites.toggle('${p.id}',this)" title="Favorito">♡</button></div><div class="prod-body"><div class="prod-cat">${escapeHtml(getCategoryName(p.cat))} / ${escapeHtml(getSubcategoryName(p.cat2))}</div><div class="prod-name">${escapeHtml(p.name)}</div><div class="prod-size">${escapeHtml(p.size || '35 ml · EDP')}</div><div class="prod-footer"><span class="prod-price">$${p.price.toLocaleString('es-AR')}</span><button class="prod-atc" onclick="event.stopPropagation();Cart.addItem(PRODUCTS.find(x=>x.id==='${p.id}'))">+ Añadir</button></div></div></div>`;
       }).join('') : '<div class="section-card" style="grid-column:1/-1"><div class="tbl-empty">No hay fragancias para ese filtro.</div></div>';
       initProductCarousels(grid);
     }
