@@ -8526,11 +8526,14 @@ renderConfigWAPreview();
 
   <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-database-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-storage-compat.js"></script>
   <script>
     const firebaseConfig = {
-      apiKey: "AIzaSyDPXcIHmLdv8jtfIPMJ8OmQYR8xRbI9Y-Y",
+      apiKey: "AIzaSyDPXcIHmLdv8jtfIPMJ8OmQYR8xRbT9Y-Y",
       authDomain: "auracipoletti.firebaseapp.com",
+      databaseURL: "https://auracipoletti-default-rtdb.firebaseio.com",
       projectId: "auracipoletti",
       storageBucket: "auracipoletti.firebasestorage.app",
       messagingSenderId: "276346261251",
@@ -8538,8 +8541,10 @@ renderConfigWAPreview();
     };
 
     if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore();
-    console.log('Firebase conectado');
+    const rtdb = firebase.database ? firebase.database() : null;
+    const firestore = firebase.firestore ? firebase.firestore() : null;
+    const storage = firebase.storage ? firebase.storage() : null;
+    console.log(rtdb ? 'Firebase Realtime Database conectado' : 'Firebase conectado sin Realtime Database');
 
     const LS = {
       get: k => {
@@ -8553,7 +8558,10 @@ renderConfigWAPreview();
     };
 
     window.__syncReady = false;
-    window.__syncDb = db;
+    window.__syncDb = rtdb || firestore;
+    window.__syncRealtimeDb = rtdb;
+    window.__syncFirestore = firestore;
+    window.__syncStorage = storage;
 
     function applyNosotrosData(vals) {
       vals = vals || {};
@@ -8617,36 +8625,124 @@ renderConfigWAPreview();
         if (key === 'nosotros') {
           applyNosotrosData(LS.get('nosotros') || {});
         }
+        if (key === 'promos') {
+          const promos = LS.get('promos');
+          if (Array.isArray(promos) && window.PROMOS_DATA) {
+            window.PROMOS_DATA.splice(0, window.PROMOS_DATA.length, ...promos);
+            if (window.PromoAdmin?.render) window.PromoAdmin.render();
+            renderProducts();
+            Dash.renderInventory?.();
+            Dash.updatePanelKPIs?.();
+          }
+        }
       } catch (err) { console.log('RENDER SYNC ERROR ->', key, err.message); }
     }
 
     (function () {
-      const syncKeys = ['products', 'taxonomy', 'store', 'orders', 'customers', 'nosotros', 'heatmap'];
+      const syncKeys = ['products', 'taxonomy', 'store', 'orders', 'customers', 'nosotros', 'heatmap', 'promos'];
       const baseSet = LS.set.bind(LS);
       const timers = {};
+      window.__syncClientId = window.__syncClientId || `aura-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
       function safeClone(v) { return JSON.parse(JSON.stringify(v)); }
       function safeGetLocalImages() {
         try { return JSON.parse(localStorage.getItem('aura_product_images') || '{}'); }
         catch (e) { return {}; }
       }
-      function docRef(key) { return db.collection('aura_sync').doc(key); }
+      function isDataImage(value) { return typeof value === 'string' && value.startsWith('data:image/'); }
+      function safeAssetName(value) { return String(value || 'asset').replace(/[^a-z0-9_-]+/gi, '-').slice(0, 60) || 'asset'; }
+      async function uploadSyncAsset(dataUrl, name) {
+        if (!isDataImage(dataUrl)) return dataUrl && dataUrl.startsWith('http') ? dataUrl : '';
+        if (!storage) return '';
+        try {
+          const ref = storage.ref().child(`aura_sync_assets/${safeAssetName(name)}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.jpg`);
+          const snap = await ref.putString(dataUrl, 'data_url');
+          return await snap.ref.getDownloadURL();
+        } catch (err) {
+          console.log('SYNC ASSET ERROR ->', name, err.message);
+          return '';
+        }
+      }
+      async function normalizeImageListForSync(images, name) {
+        const list = Array.isArray(images) ? images : [];
+        const out = [];
+        for (let i = 0; i < list.length; i++) {
+          const img = list[i];
+          if (typeof img === 'string' && img.startsWith('http')) out.push(img);
+          else if (isDataImage(img)) {
+            const uploaded = await uploadSyncAsset(img, `${name}-${i}`);
+            if (uploaded) out.push(uploaded);
+          }
+        }
+        return out;
+      }
+      function syncRef(key) {
+        if (rtdb) return { type: 'rtdb', ref: rtdb.ref(`aura_sync/${key}`) };
+        if (firestore) return { type: 'firestore', ref: firestore.collection('aura_sync').doc(key) };
+        return null;
+      }
+      async function readRemoteKey(key) {
+        const target = syncRef(key);
+        if (!target) return { exists: false, value: undefined };
+        if (target.type === 'rtdb') {
+          const snap = await target.ref.once('value');
+          return { exists: snap.exists(), value: snap.exists() ? snap.val()?.value : undefined };
+        }
+        const snap = await target.ref.get();
+        return { exists: snap.exists, value: snap.exists && snap.data() ? snap.data().value : undefined };
+      }
+      async function writeRemoteKey(key, value) {
+        const payload = { value, updatedAt: new Date().toISOString(), source: window.__syncClientId };
+        const target = syncRef(key);
+        if (!target) throw new Error('Firebase Database no disponible');
+        if (target.type === 'rtdb') return target.ref.set(payload);
+        return target.ref.set(payload);
+      }
+      function listenRemoteKey(key, callback) {
+        const target = syncRef(key);
+        if (!target) return;
+        if (target.type === 'rtdb') {
+          target.ref.on('value', snap => {
+            if (!snap.exists()) return;
+            callback(snap.val() ? snap.val().value : null);
+          }, err => console.log('SYNC LISTEN ERROR ->', key, err.message));
+          return;
+        }
+        target.ref.onSnapshot(doc => {
+          if (!doc.exists) return;
+          callback(doc.data() ? doc.data().value : null);
+        });
+      }
 
       async function pushKey(key) {
         try {
           let value = safeClone(LS.get(key));
-          // Strip base64 images before pushing to Firestore (1MB doc limit)
-          // URL images are kept (they're just text, no size issue)
+          if (typeof value === 'undefined' || value === null) return;
+          // Firestore docs are capped at 1MB, so local data images are uploaded to Storage first.
           if (key === 'products' && Array.isArray(value)) {
-            value = value.map(p => {
-              const cleanImgs = (p.images || []).filter(img => img && img.startsWith('http'));
-              return { ...p, images: cleanImgs };
-            });
+            value = await Promise.all(value.map(async p => ({
+              ...p,
+              images: await normalizeImageListForSync(p.images, `product-${p.id || p.name}`)
+            })));
           }
-          await docRef(key).set({
-            value: value,
-            updatedAt: new Date().toISOString()
-          });
+          if (key === 'promos' && Array.isArray(value)) {
+            value = await Promise.all(value.map(async p => {
+              const images = await normalizeImageListForSync(p.images, `promo-${p.id || p.name}`);
+              const coverImage = String(p.coverImage || '').startsWith('http')
+                ? p.coverImage
+                : await uploadSyncAsset(p.coverImage, `promo-cover-${p.id || p.name}`);
+              return { ...p, coverImage: coverImage || images[0] || '', images };
+            }));
+          }
+          if (key === 'store' && value && typeof value === 'object') {
+            for (const field of ['heroBg', 'portalImg', 'heroLogo']) {
+              if (isDataImage(value[field])) value[field] = await uploadSyncAsset(value[field], `store-${field}`);
+            }
+            delete value._pendingHeroBg;
+            delete value._pendingPortalImg;
+            delete value._pendingHeroLogo;
+          }
+          await writeRemoteKey(key, value);
           window.__syncReady = true;
           console.log('SYNC OK ->', key);
         } catch (err) {
@@ -8658,9 +8754,16 @@ renderConfigWAPreview();
         baseSet(key, value);
         if (syncKeys.includes(key)) {
           clearTimeout(timers[key]);
-          timers[key] = setTimeout(() => pushKey(key), 250);
+          timers[key] = setTimeout(() => pushKey(key), 50);
         }
       };
+      window.LS = LS;
+
+      window.addEventListener('storage', event => {
+        if (!event.key || !event.key.startsWith('aura_')) return;
+        const key = event.key.replace(/^aura_/, '');
+        if (syncKeys.includes(key)) rerenderSyncedKey(key);
+      });
 
       window.saveProductsLS = function () {
         // Save full products (with images) to localStorage
@@ -8704,23 +8807,24 @@ renderConfigWAPreview();
             heatmap: HEATMAP,
             nosotros: (function () {
               try { return JSON.parse(localStorage.getItem('aura_nosotros') || 'null') || null } catch (e) { return null }
+            })(),
+            promos: (function () {
+              try { return JSON.parse(localStorage.getItem('aura_promos') || 'null') || null } catch (e) { return null }
             })()
           };
           for (const key of syncKeys) {
-            const snap = await docRef(key).get();
-            if (snap.exists && snap.data() && typeof snap.data().value !== 'undefined') {
-              baseSet(key, snap.data().value);
+            const remoteSnap = await readRemoteKey(key);
+            if (remoteSnap.exists && typeof remoteSnap.value !== 'undefined') {
+              baseSet(key, remoteSnap.value);
             } else if (localFallbacks[key] != null) {
               baseSet(key, localFallbacks[key]);
               await pushKey(key);
             }
 
-            docRef(key).onSnapshot(doc => {
-              if (!doc.exists) return;
-              const remote = doc.data() ? doc.data().value : null;
+            listenRemoteKey(key, remote => {
               const local = LS.get(key);
               if (JSON.stringify(remote) !== JSON.stringify(local)) {
-                // For products: re-attach local images before saving (Firestore strips them)
+                // For products: re-attach local images before saving (Storage/remote sync keeps URLs)
                 if (key === 'products' && Array.isArray(remote)) {
                   const imgMap = safeGetLocalImages();
                   const merged = remote.map(p => ({
@@ -8744,6 +8848,7 @@ renderConfigWAPreview();
           rerenderSyncedKey('customers');
           rerenderSyncedKey('heatmap');
           rerenderSyncedKey('nosotros');
+          rerenderSyncedKey('promos');
           window.__syncReady = true;
           console.log('SYNC READY');
         } catch (err) {
@@ -9755,7 +9860,8 @@ const SugCenter = (() => {
     }
 
     function savePromosLS(){
-      try { localStorage.setItem('aura_promos', JSON.stringify(PROMOS_DATA)); } catch(e){}
+      if (window.LS?.set) window.LS.set('promos', PROMOS_DATA);
+      else { try { localStorage.setItem('aura_promos', JSON.stringify(PROMOS_DATA)); } catch(e){} }
     }
 
     function loadPromosLS(){
@@ -9776,6 +9882,7 @@ const SugCenter = (() => {
       });
       savePromosLS();
     }
+    window.PROMOS_DATA = PROMOS_DATA;
     loadPromosLS();
 
     const originalSaveProductsLS = saveProductsLS;
