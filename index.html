@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 
 <head>
@@ -8526,6 +8526,7 @@ renderConfigWAPreview();
 
   <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-database-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-storage-compat.js"></script>
   <script>
@@ -8540,9 +8541,10 @@ renderConfigWAPreview();
     };
 
     if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore();
+    const rtdb = firebase.database ? firebase.database() : null;
+    const firestore = firebase.firestore ? firebase.firestore() : null;
     const storage = firebase.storage ? firebase.storage() : null;
-    console.log('Firebase conectado');
+    console.log(rtdb ? 'Firebase Realtime Database conectado' : 'Firebase conectado sin Realtime Database');
 
     const LS = {
       get: k => {
@@ -8556,7 +8558,9 @@ renderConfigWAPreview();
     };
 
     window.__syncReady = false;
-    window.__syncDb = db;
+    window.__syncDb = rtdb || firestore;
+    window.__syncRealtimeDb = rtdb;
+    window.__syncFirestore = firestore;
     window.__syncStorage = storage;
 
     function applyNosotrosData(vals) {
@@ -8579,8 +8583,8 @@ renderConfigWAPreview();
       try {
         if (key === 'products') {
           const raw = LS.get('products');
-          if (Array.isArray(raw)) {
-            // Merge Firestore data with locally-stored images
+          if (Array.isArray(raw) && shouldTrustRemoteProducts(raw)) {
+            // Merge remote data with locally-stored images
             const localImgs = safeGetLocalImages();
             PRODUCTS = raw.map(p => ({
               ...p,
@@ -8638,6 +8642,56 @@ renderConfigWAPreview();
       const syncKeys = ['products', 'taxonomy', 'store', 'orders', 'customers', 'nosotros', 'heatmap', 'promos'];
       const baseSet = LS.set.bind(LS);
       const timers = {};
+      const SYNC_BUILD = 'rtdb-sync-2026-05-01-2031';
+      function hasLocalSyncKey(key) { return localStorage.getItem('aura_' + key) !== null; }
+      function isDefaultProductsList(list) {
+        return Array.isArray(list)
+          && Array.isArray(DEFAULT_PRODUCTS)
+          && list.length === DEFAULT_PRODUCTS.length
+          && list.every((p, idx) => p && DEFAULT_PRODUCTS[idx] && p.id === DEFAULT_PRODUCTS[idx].id);
+      }
+      function shouldTrustRemoteProducts(remote) {
+        if (!Array.isArray(remote)) return false;
+        const local = LS.get('products');
+        if (Array.isArray(local) && local.length > remote.length && isDefaultProductsList(remote)) {
+          setSyncStatus('error', 'Firebase tiene el catálogo default de 8 productos; se protege el catálogo local de ' + local.length, true);
+          return false;
+        }
+        return true;
+      }
+      window.__auraSyncBuild = SYNC_BUILD;
+      if (new URLSearchParams(location.search).has('syncdebug')) localStorage.setItem('aura_sync_debug', '1');
+      window.__syncClientId = window.__syncClientId || `aura-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+
+      function setSyncStatus(state, message, alwaysShow) {
+        window.__auraSyncStatus = { state, message, build: SYNC_BUILD, at: new Date().toISOString() };
+        console.log(`AURA SYNC [${state}] ${message}`);
+        if (!alwaysShow && state !== 'error' && !localStorage.getItem('aura_sync_debug')) return;
+        let badge = document.getElementById('aura-sync-status');
+        if (!badge) {
+          badge = document.createElement('div');
+          badge.id = 'aura-sync-status';
+          badge.style.cssText = 'position:fixed;left:10px;bottom:10px;z-index:999999;padding:8px 10px;border-radius:10px;font:12px/1.25 system-ui,-apple-system,Segoe UI,sans-serif;color:#fff;box-shadow:0 8px 24px rgba(0,0,0,.24);max-width:310px;pointer-events:none';
+          document.body.appendChild(badge);
+        }
+        badge.style.background = state === 'error' ? '#b42318' : state === 'ready' ? '#067647' : '#344054';
+        badge.textContent = `AURA Sync ${state}: ${message}`;
+      }
+
+      window.AuraSyncDoctor = {
+        build: SYNC_BUILD,
+        enableDebug() { localStorage.setItem('aura_sync_debug', '1'); setSyncStatus('debug', 'debug visible activado', true); },
+        disableDebug() { localStorage.removeItem('aura_sync_debug'); document.getElementById('aura-sync-status')?.remove(); },
+        status() { return window.__auraSyncStatus || null; },
+        async ping() {
+          const payload = { at: new Date().toISOString(), client: window.__syncClientId, build: SYNC_BUILD };
+          if (!rtdb) throw new Error('Realtime Database SDK no disponible');
+          await rtdb.ref('aura_sync/__ping').set(payload);
+          const snap = await rtdb.ref('aura_sync/__ping').once('value');
+          return snap.val();
+        }
+      };
+      setSyncStatus('init', rtdb ? `Realtime Database activo (${SYNC_BUILD})` : 'Realtime Database SDK no disponible', !!localStorage.getItem('aura_sync_debug'));
 
       function safeClone(v) { return JSON.parse(JSON.stringify(v)); }
       function safeGetLocalImages() {
@@ -8671,7 +8725,43 @@ renderConfigWAPreview();
         }
         return out;
       }
-      function docRef(key) { return db.collection('aura_sync').doc(key); }
+      function syncRef(key) {
+        if (rtdb) return { type: 'rtdb', ref: rtdb.ref(`aura_sync/${key}`) };
+        if (firestore) return { type: 'firestore', ref: firestore.collection('aura_sync').doc(key) };
+        return null;
+      }
+      async function readRemoteKey(key) {
+        const target = syncRef(key);
+        if (!target) return { exists: false, value: undefined };
+        if (target.type === 'rtdb') {
+          const snap = await target.ref.once('value');
+          return { exists: snap.exists(), value: snap.exists() ? snap.val()?.value : undefined };
+        }
+        const snap = await target.ref.get();
+        return { exists: snap.exists, value: snap.exists && snap.data() ? snap.data().value : undefined };
+      }
+      async function writeRemoteKey(key, value) {
+        const payload = { value, updatedAt: new Date().toISOString(), source: window.__syncClientId };
+        const target = syncRef(key);
+        if (!target) throw new Error('Firebase Database no disponible');
+        if (target.type === 'rtdb') return target.ref.set(payload);
+        return target.ref.set(payload);
+      }
+      function listenRemoteKey(key, callback) {
+        const target = syncRef(key);
+        if (!target) return;
+        if (target.type === 'rtdb') {
+          target.ref.on('value', snap => {
+            if (!snap.exists()) return;
+            callback(snap.val() ? snap.val().value : null);
+          }, err => setSyncStatus('error', 'listener ' + key + ': ' + err.message, true));
+          return;
+        }
+        target.ref.onSnapshot(doc => {
+          if (!doc.exists) return;
+          callback(doc.data() ? doc.data().value : null);
+        });
+      }
 
       async function pushKey(key) {
         try {
@@ -8701,14 +8791,11 @@ renderConfigWAPreview();
             delete value._pendingPortalImg;
             delete value._pendingHeroLogo;
           }
-          await docRef(key).set({
-            value: value,
-            updatedAt: new Date().toISOString()
-          });
+          await writeRemoteKey(key, value);
           window.__syncReady = true;
-          console.log('SYNC OK ->', key);
+          setSyncStatus('ready', 'guardado ' + key + ' en Realtime Database', false);
         } catch (err) {
-          console.log('SYNC ERROR ->', key, err.message);
+          setSyncStatus('error', key + ': ' + err.message, true);
         }
       }
 
@@ -8761,12 +8848,12 @@ renderConfigWAPreview();
       async function bootstrapSync() {
         try {
           const localFallbacks = {
-            products: PRODUCTS,
-            taxonomy: TAXONOMY,
-            store: STORE,
-            orders: ORDERS,
-            customers: CUSTOMERS,
-            heatmap: HEATMAP,
+            products: hasLocalSyncKey('products') ? PRODUCTS : null,
+            taxonomy: hasLocalSyncKey('taxonomy') ? TAXONOMY : null,
+            store: hasLocalSyncKey('store') ? STORE : null,
+            orders: hasLocalSyncKey('orders') ? ORDERS : null,
+            customers: hasLocalSyncKey('customers') ? CUSTOMERS : null,
+            heatmap: hasLocalSyncKey('heatmap') ? HEATMAP : null,
             nosotros: (function () {
               try { return JSON.parse(localStorage.getItem('aura_nosotros') || 'null') || null } catch (e) { return null }
             })(),
@@ -8775,20 +8862,26 @@ renderConfigWAPreview();
             })()
           };
           for (const key of syncKeys) {
-            const snap = await docRef(key).get();
-            if (snap.exists && snap.data() && typeof snap.data().value !== 'undefined') {
-              baseSet(key, snap.data().value);
+            const remoteSnap = await readRemoteKey(key);
+            if (remoteSnap.exists && typeof remoteSnap.value !== 'undefined') {
+              if (key === 'products' && !shouldTrustRemoteProducts(remoteSnap.value)) {
+                await pushKey('products');
+              } else {
+                baseSet(key, remoteSnap.value);
+              }
             } else if (localFallbacks[key] != null) {
               baseSet(key, localFallbacks[key]);
               await pushKey(key);
             }
 
-            docRef(key).onSnapshot(doc => {
-              if (!doc.exists) return;
-              const remote = doc.data() ? doc.data().value : null;
+            listenRemoteKey(key, remote => {
               const local = LS.get(key);
               if (JSON.stringify(remote) !== JSON.stringify(local)) {
-                // For products: re-attach local images before saving (Firestore strips them)
+                // For products: re-attach local images before saving (Storage/remote sync keeps URLs)
+                if (key === 'products' && !shouldTrustRemoteProducts(remote)) {
+                  pushKey('products');
+                  return;
+                }
                 if (key === 'products' && Array.isArray(remote)) {
                   const imgMap = safeGetLocalImages();
                   const merged = remote.map(p => ({
@@ -8814,9 +8907,9 @@ renderConfigWAPreview();
           rerenderSyncedKey('nosotros');
           rerenderSyncedKey('promos');
           window.__syncReady = true;
-          console.log('SYNC READY');
+          setSyncStatus('ready', 'escuchando ' + syncKeys.length + ' claves en Realtime Database', !!localStorage.getItem('aura_sync_debug'));
         } catch (err) {
-          console.log('SYNC BOOTSTRAP ERROR', err.message);
+          setSyncStatus('error', 'bootstrap: ' + err.message, true);
         }
       }
 
