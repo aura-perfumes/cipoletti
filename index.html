@@ -10918,13 +10918,6 @@ const SugCenter = (() => {
       margin-bottom: .12rem;
     }
 
-    .aura-transfer-price {
-      font-size: .68rem;
-      color: var(--gold);
-      font-weight: 700;
-      line-height: 1.25;
-    }
-
     .aura-stock-alert {
       width: 100%;
       font-size: .64rem;
@@ -11559,7 +11552,6 @@ const SugCenter = (() => {
         font-size: .58rem;
       }
 
-      .aura-transfer-price,
       .aura-stock-alert {
         font-size: .58rem;
       }
@@ -11622,6 +11614,192 @@ const SugCenter = (() => {
       }
     }
 
+    /* REDISEÑO FONDO PREMIUM AZUL TEXTURIZADO */
+    body {
+      background:
+        radial-gradient(circle at 22% 8%, rgba(31, 65, 120, .22), transparent 34%),
+        linear-gradient(180deg, #050B1F 0%, #071530 46%, #040B1B 100%);
+    }
+
+    #s-store {
+      isolation: isolate;
+      background:
+        radial-gradient(circle at 28% 14%, rgba(31, 65, 120, .28), transparent 34%),
+        radial-gradient(circle at 72% 82%, rgba(5, 18, 45, .82), transparent 46%),
+        linear-gradient(180deg, #061126 0%, #08172F 45%, #040B1B 100%) !important;
+      color: #F8F3EA;
+    }
+
+    #s-store::before,
+    #s-store::after {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    #s-store::before {
+      background:
+        radial-gradient(circle at 30% 20%, rgba(31, 65, 120, .22), transparent 35%),
+        radial-gradient(circle at 70% 80%, rgba(5, 18, 45, .64), transparent 45%);
+    }
+
+    #s-store::after {
+      opacity: .13;
+      background-image:
+        repeating-linear-gradient(90deg, rgba(255, 255, 255, .035) 0px, rgba(255, 255, 255, .035) 1px, transparent 1px, transparent 4px),
+        repeating-linear-gradient(0deg, rgba(255, 255, 255, .025) 0px, rgba(255, 255, 255, .025) 1px, transparent 1px, transparent 5px);
+      mix-blend-mode: soft-light;
+    }
+
+    #s-store .store-nav,
+    #s-store .store-body,
+    #s-store .product-grid,
+    #s-store .filter-bar,
+    #s-store .store-section,
+    #s-store #store-products-label {
+      position: relative;
+      z-index: 1;
+    }
+
+    #s-store .store-body {
+      background: transparent !important;
+      padding-top: 1.25rem;
+      padding-bottom: 3rem;
+    }
+
+    #s-store #store-products-label {
+      color: #F8F3EA !important;
+      text-shadow: 0 2px 12px rgba(0, 0, 0, .35);
+      margin: 1rem 0 1.05rem;
+    }
+
+    #s-store .filter-bar {
+      gap: .7rem;
+      margin-bottom: 1rem;
+    }
+
+    #s-store .chip {
+      background: rgba(255, 255, 255, .92);
+      color: #1B2A44;
+      border: 1px solid rgba(214, 182, 106, .28);
+      box-shadow: 0 8px 22px rgba(0, 0, 0, .14);
+    }
+
+    #s-store .chip.active {
+      background: #111D33;
+      color: #fff;
+      border-color: rgba(214, 182, 106, .55);
+    }
+
+    #s-store .chip[data-cat="promos"].active,
+    #s-store .chip.promo.active {
+      background: linear-gradient(135deg, #D6B66A, #B9933B);
+      color: #111827;
+    }
+
+    #s-store .search-input {
+      background: #FFFCF6;
+      color: #101B31;
+      border: 1px solid rgba(214, 182, 106, .42);
+      box-shadow: 0 8px 22px rgba(0, 0, 0, .14);
+    }
+
+    #s-store .search-input::placeholder {
+      color: #7A8494;
+    }
+
+    #s-store .product-grid {
+      gap: 1.45rem;
+    }
+
+    #s-store .aura-enhanced-products .prod-card:not(.promo-card),
+    #s-store .prod-card:not(.promo-card) {
+      background: linear-gradient(180deg, #fffdf8 0%, #f7efe2 100%) !important;
+      border: 1px solid rgba(214, 182, 106, .32) !important;
+      border-radius: 20px !important;
+      box-shadow: 0 18px 45px rgba(0, 0, 0, .32) !important;
+      overflow: hidden;
+    }
+
+    #s-store .prod-card:not(.promo-card):hover {
+      transform: translateY(-4px);
+      box-shadow: 0 24px 58px rgba(0, 0, 0, .38) !important;
+    }
+
+    #s-store .prod-thumb {
+      background: #F8F3EA !important;
+      border-bottom: 1px solid rgba(214, 182, 106, .2);
+    }
+
+    #s-store .prod-cat {
+      color: #B9933B !important;
+    }
+
+    #s-store .prod-name,
+    #s-store .prod-price {
+      color: #101B31 !important;
+    }
+
+    #s-store .prod-size {
+      color: #697386 !important;
+    }
+
+    #s-store .prod-atc {
+      background: linear-gradient(135deg, #101B31 0%, #17243E 100%) !important;
+      color: #fff !important;
+      border: 1px solid rgba(214, 182, 106, .34) !important;
+      box-shadow: 0 8px 20px rgba(8, 12, 34, .22);
+    }
+
+    #s-store .prod-atc:hover {
+      background: linear-gradient(135deg, #17243E 0%, #223455 100%) !important;
+      box-shadow: 0 10px 26px rgba(214, 182, 106, .18);
+    }
+
+    #s-store .prod-badge,
+    #s-store .promo-tag {
+      background: #111D33 !important;
+      color: #D6B66A !important;
+      box-shadow: 0 8px 18px rgba(0, 0, 0, .22);
+    }
+
+    #s-store .aura-stock-alert {
+      color: #8A610E;
+      background: rgba(214, 182, 106, .16);
+      border-color: rgba(214, 182, 106, .3);
+    }
+
+    .aura-checkout-panel .qty-btn {
+      background: #101B31 !important;
+      color: #fff !important;
+      border: 1px solid rgba(214, 182, 106, .5) !important;
+      box-shadow: 0 7px 16px rgba(16, 27, 49, .22);
+      font-weight: 900;
+    }
+
+    .aura-checkout-panel .qty-btn:hover {
+      background: #223455 !important;
+      border-color: rgba(214, 182, 106, .72) !important;
+    }
+
+    @media (max-width: 767px) {
+      #s-store .store-body {
+        padding-left: .85rem;
+        padding-right: .85rem;
+      }
+
+      #s-store .product-grid {
+        gap: .9rem;
+      }
+
+      #s-store .search-wrap,
+      #s-store .search-input {
+        width: 100% !important;
+      }
+    }
+
     @media (max-width: 359px) {
       .product-grid.aura-enhanced-products {
         grid-template-columns: 1fr !important;
@@ -11631,11 +11809,9 @@ const SugCenter = (() => {
 
   <script>
     (function () {
-      const TRANSFER_DISCOUNT = 0.15;
       const COUPONS = { AURA10: 10, AURA15: 15 };
       const STORAGE_KEY = 'aura_checkout_state_v1';
       const FIELD_CONFIG_KEY = 'aura_checkout_field_config';
-      const PRODUCT_PAYMENT_CONFIG_KEY = 'aura_product_payment_display_config';
       const DEFAULT_FIELD_CONFIG = {
         name: { label: 'Nombre', group: 'Datos personales', enabled: true, required: true },
         phone: { label: 'Telefono', group: 'Datos personales', enabled: true, required: true },
@@ -11653,7 +11829,6 @@ const SugCenter = (() => {
       let checkoutStep = 0;
       let checkoutState = loadCheckoutState();
       let checkoutFieldConfig = loadCheckoutFieldConfig();
-      let productPaymentConfig = loadProductPaymentConfig();
 
       function money(value) {
         return '$' + Number(value || 0).toLocaleString('es-AR');
@@ -11669,44 +11844,11 @@ const SugCenter = (() => {
         return Array.isArray(product?.images) && product.images.length ? product.images[0] : '';
       }
 
-      function loadProductPaymentConfig() {
-        try {
-          const saved = JSON.parse(localStorage.getItem(PRODUCT_PAYMENT_CONFIG_KEY) || '{}') || {};
-          const percent = Number(saved.transferDiscountPercent);
-          return {
-            showTransferPrice: saved.showTransferPrice !== false,
-            transferDiscountPercent: Number.isFinite(percent) ? Math.max(0, Math.min(90, percent)) : 15
-          };
-        } catch (e) {
-          return { showTransferPrice: true, transferDiscountPercent: 15 };
-        }
-      }
-
-      function saveProductPaymentConfig() {
-        localStorage.setItem(PRODUCT_PAYMENT_CONFIG_KEY, JSON.stringify(productPaymentConfig));
-      }
-
       function renderProductPaymentInfo(product) {
-        const price = Number(product?.price || 0);
-        if (!price) return '';
-        if (productPaymentConfig.showTransferPrice === false) {
-          const stock = Number(product.stock ?? 0);
-          return stock === 1
-            ? '<div class="aura-stock-alert">&#161;No te lo pierdas, es el &uacute;ltimo!</div>'
-            : (stock > 1 && stock <= 3 ? `<div class="aura-stock-alert">&#161;Solo quedan ${stock} en stock!</div>` : '');
-        }
-        const configuredDiscount = Number(productPaymentConfig.transferDiscountPercent);
-        const transferDiscount = Number.isFinite(configuredDiscount)
-          ? Math.max(0, Math.min(90, configuredDiscount)) / 100
-          : Number(product.transferDiscount ?? product.transfer_discount ?? TRANSFER_DISCOUNT);
-        const transferPrice = product.transferPrice || product.cashPrice || Math.round(price * (1 - transferDiscount));
         const stock = Number(product.stock ?? 0);
-        const stockHTML = stock === 1
+        return stock === 1
           ? '<div class="aura-stock-alert">&#161;No te lo pierdas, es el &uacute;ltimo!</div>'
           : (stock > 1 && stock <= 3 ? `<div class="aura-stock-alert">&#161;Solo quedan ${stock} en stock!</div>` : '');
-        return `<div class="aura-product-pay-info">
-          <div class="aura-transfer-price">${money(transferPrice)} con Transferencia o efectivo</div>
-        </div>${stockHTML}`;
       }
 
       function enhanceProductCards() {
@@ -11953,7 +12095,6 @@ const SugCenter = (() => {
           return;
         }
         checkoutFieldConfig = loadCheckoutFieldConfig();
-        productPaymentConfig = loadProductPaymentConfig();
         syncCheckoutStateFromCart();
         checkoutStep = Math.max(0, Math.min(2, Number(step) || 0));
         const { overlay, panel } = ensureCheckout();
@@ -11996,8 +12137,7 @@ const SugCenter = (() => {
               </div>`;
             }).join('')}
             <div class="aura-summary-row"><span>Subtotal</span><strong>${money(totals.subtotal)}</strong></div>
-            ${totals.promoDiscount ? `<div class="aura-summary-row discount"><span>Descuento promociones</span><strong>- ${money(totals.promoDiscount)}</strong></div>` : ''}
-            ${totals.couponDiscount ? `<div class="aura-summary-row discount"><span>Cupon ${auraEscape(checkoutState.couponCode)}</span><strong>- ${money(totals.couponDiscount)}</strong></div>` : ''}
+            ${(totals.promoDiscount + totals.couponDiscount) ? `<div class="aura-summary-row discount"><span>Descuento acumulado</span><strong>- ${money(totals.promoDiscount + totals.couponDiscount)}</strong></div>` : ''}
             <div class="aura-summary-row"><span>Envio</span><strong>${totals.shipping ? money(totals.shipping) : auraEscape(totals.shippingLabel)}</strong></div>
             <div class="aura-summary-row total"><span>Total final</span><strong>${money(totals.total)}</strong></div>
           </div>` : '';
@@ -12046,7 +12186,7 @@ const SugCenter = (() => {
           </div>`).join('')}
           <div class="aura-summary-body" style="border-top:1px solid rgba(12,15,26,.08);padding:.75rem 0 0;margin-top:.25rem">
             <div class="aura-summary-row"><span>Subtotal</span><strong>${money(totals.subtotal)}</strong></div>
-            ${totals.promoDiscount ? `<div class="aura-summary-row discount"><span>Descuento promociones</span><strong>- ${money(totals.promoDiscount)}</strong></div>` : ''}
+            ${(totals.promoDiscount + totals.couponDiscount) ? `<div class="aura-summary-row discount"><span>Descuento acumulado</span><strong>- ${money(totals.promoDiscount + totals.couponDiscount)}</strong></div>` : ''}
             <div class="aura-summary-row"><span>Envio</span><strong>${totals.shipping ? money(totals.shipping) : auraEscape(totals.shippingLabel)}</strong></div>
             <div class="aura-summary-row total"><span>Total</span><strong>${money(totals.total)}</strong></div>
           </div>
@@ -12307,17 +12447,6 @@ const SugCenter = (() => {
         section.removeAttribute('data-accordion-ready');
         section.innerHTML = `<div class="config-section-title">Campos solicitados en el checkout</div>
           <div class="config-hint" style="margin-bottom:.9rem">Defini que informacion ve el comprador y que campos son obligatorios. Se aplica inmediatamente al checkout.</div>
-          <div class="aura-admin-field-group">Visualizacion de productos</div>
-          <div class="aura-admin-field-row">
-            <div>
-              <div class="aura-admin-field-name">Precio con Transferencia o efectivo</div>
-              <div class="config-hint">Muestra u oculta el descuento debajo de cada perfume en la tienda y define el porcentaje usado para calcularlo.</div>
-            </div>
-            <label class="aura-admin-field-check"><input type="checkbox" ${productPaymentConfig.showTransferPrice !== false ? 'checked' : ''} onchange="AuraCheckoutConfig.updateProductPayment('showTransferPrice',this.checked)"> Mostrar descuento</label>
-            <label class="aura-admin-field-check">Descuento
-              <input class="config-input" type="number" min="0" max="90" step="1" value="${Number(productPaymentConfig.transferDiscountPercent || 15)}" style="width:82px;min-height:34px;padding:.35rem .5rem" onchange="AuraCheckoutConfig.updateProductPayment('transferDiscountPercent',this.value)"> %
-            </label>
-          </div>
           <div class="aura-admin-checkout-fields">
             ${Object.entries(grouped).map(([group, rows]) => `
               <div class="aura-admin-field-group">${auraEscape(group)}</div>
@@ -12418,19 +12547,6 @@ const SugCenter = (() => {
           if (document.getElementById('aura-checkout-panel')?.classList.contains('open')) renderCheckoutStep();
           if (typeof showToast === 'function') showToast('Campos del checkout actualizados');
         },
-        updateProductPayment(key, value) {
-          productPaymentConfig = loadProductPaymentConfig();
-          if (key === 'transferDiscountPercent') {
-            const parsed = Number(value);
-            productPaymentConfig.transferDiscountPercent = Number.isFinite(parsed) ? Math.max(0, Math.min(90, parsed)) : 15;
-          } else {
-            productPaymentConfig[key] = !!value;
-          }
-          saveProductPaymentConfig();
-          renderCheckoutFieldAdmin();
-          enhanceProductCards();
-          if (typeof showToast === 'function') showToast('Visualizacion de productos actualizada');
-        }
       };
       window.AuraCheckout = {
         toggleSummary() {
@@ -12506,7 +12622,6 @@ const SugCenter = (() => {
 
       function initAuraCheckoutLayer() {
         checkoutFieldConfig = loadCheckoutFieldConfig();
-        productPaymentConfig = loadProductPaymentConfig();
         patchRenderProducts();
         patchCartAddItem();
         patchCartButton();
