@@ -7124,6 +7124,183 @@
         padding-right: .85rem !important;
       }
     }
+
+    /* MICROINTERACCIONES PREMIUM EN BOTONES - CSS PURO */
+    button,
+    .btn,
+    .btn-dark,
+    .btn-outline,
+    .btn-ingresar,
+    .btn-hero-primary,
+    .btn-hero-secondary,
+    .detail-cta,
+    .prod-atc,
+    .store-cart-btn,
+    .store-nav-link,
+    .chip,
+    .dash-nav-item,
+    .config-tab,
+    .aura-btn-primary,
+    .aura-btn-secondary,
+    .qty-btn,
+    .ship-method-btn,
+    .ship-zone-btn,
+    .promo-tier-btn,
+    .aura-choice {
+      transition:
+        transform 180ms ease,
+        box-shadow 180ms ease,
+        background 180ms ease,
+        border-color 180ms ease,
+        color 180ms ease,
+        opacity 180ms ease,
+        filter 180ms ease;
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
+    }
+
+    @media (hover: hover) and (pointer: fine) {
+      .btn-dark:hover,
+      .btn-ingresar:hover,
+      .btn-hero-primary:hover,
+      .detail-cta:hover,
+      .prod-atc:hover,
+      .aura-btn-primary:hover,
+      .ship-method-btn:hover,
+      .ship-zone-btn:hover,
+      .promo-tier-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 24px rgba(8, 12, 34, .20);
+        filter: brightness(1.03);
+      }
+
+      .btn-outline:hover,
+      .btn-hero-secondary:hover,
+      .aura-btn-secondary:hover,
+      .chip:hover,
+      .store-nav-link:hover,
+      .dash-nav-item:hover,
+      .config-tab:hover,
+      .aura-choice:hover,
+      .store-cart-btn:hover {
+        transform: translateY(-1px);
+        border-color: rgba(214, 182, 106, .46);
+        box-shadow: 0 8px 18px rgba(8, 12, 34, .10);
+      }
+    }
+
+    button:active,
+    .btn:active,
+    .btn-dark:active,
+    .btn-outline:active,
+    .btn-ingresar:active,
+    .btn-hero-primary:active,
+    .btn-hero-secondary:active,
+    .detail-cta:active,
+    .prod-atc:active,
+    .store-cart-btn:active,
+    .chip:active,
+    .dash-nav-item:active,
+    .config-tab:active,
+    .aura-btn-primary:active,
+    .aura-btn-secondary:active,
+    .qty-btn:active,
+    .ship-method-btn:active,
+    .ship-zone-btn:active,
+    .promo-tier-btn:active,
+    .aura-choice:active {
+      transform: scale(.97);
+      box-shadow: 0 5px 14px rgba(8, 12, 34, .16);
+      transition-duration: 90ms;
+    }
+
+    .btn-outline:active,
+    .btn-hero-secondary:active,
+    .aura-btn-secondary:active,
+    .chip:active,
+    .store-nav-link:active {
+      transform: scale(.985);
+    }
+
+    .btn-dark,
+    .btn-ingresar,
+    .btn-hero-primary,
+    .detail-cta,
+    .prod-atc,
+    .aura-btn-primary {
+      position: relative;
+      overflow: hidden;
+      isolation: isolate;
+    }
+
+    .btn-dark::after,
+    .btn-ingresar::after,
+    .btn-hero-primary::after,
+    .detail-cta::after,
+    .prod-atc::after,
+    .aura-btn-primary::after {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: -125%;
+      width: 80%;
+      height: 100%;
+      background: linear-gradient(120deg, transparent, rgba(255, 255, 255, .24), transparent);
+      pointer-events: none;
+      transition: left 520ms ease;
+      z-index: 0;
+    }
+
+    @media (hover: hover) and (pointer: fine) {
+      .btn-dark:hover::after,
+      .btn-ingresar:hover::after,
+      .btn-hero-primary:hover::after,
+      .detail-cta:hover::after,
+      .prod-atc:hover::after,
+      .aura-btn-primary:hover::after {
+        left: 125%;
+      }
+
+      .btn-ingresar,
+      .btn-hero-primary,
+      .detail-cta,
+      .aura-btn-primary {
+        animation: auraSoftPulse 3.4s ease-in-out infinite;
+      }
+
+      .prod-atc:hover {
+        animation: auraSoftPulse 2.1s ease-in-out infinite;
+      }
+    }
+
+    .btn-outline,
+    .btn-hero-secondary,
+    .aura-btn-secondary,
+    .chip,
+    .store-nav-link {
+      box-shadow: none;
+    }
+
+    @keyframes auraSoftPulse {
+      0%,
+      100% {
+        box-shadow: 0 0 0 rgba(214, 182, 106, 0);
+      }
+
+      50% {
+        box-shadow: 0 0 18px rgba(214, 182, 106, .18);
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        animation: none !important;
+        transition: none !important;
+        scroll-behavior: auto !important;
+      }
+    }
   </style>
 </head>
 
