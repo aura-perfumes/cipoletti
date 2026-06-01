@@ -3096,6 +3096,73 @@
       background: var(--red)
     }
 
+    .stock-control {
+      display: inline-grid;
+      grid-template-columns: auto minmax(82px, 1fr);
+      align-items: center;
+      gap: .62rem;
+      min-width: 148px;
+    }
+
+    .stock-arrows {
+      display: inline-flex;
+      align-items: center;
+      gap: .34rem;
+      white-space: nowrap;
+    }
+
+    .stock-step {
+      width: 30px;
+      height: 30px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid rgba(30, 41, 59, .24);
+      border-radius: 50%;
+      background: #fff;
+      color: var(--text);
+      cursor: pointer;
+      font-size: .95rem;
+      line-height: 1;
+      transition: transform var(--trans), border-color var(--trans), background var(--trans), color var(--trans), box-shadow var(--trans);
+    }
+
+    .stock-step:hover {
+      border-color: var(--text);
+      background: #f8fafc;
+      box-shadow: 0 8px 18px rgba(15, 23, 42, .08);
+      transform: translateY(-1px);
+    }
+
+    .stock-step:active {
+      transform: translateY(0);
+      box-shadow: none;
+    }
+
+    .stock-step.down {
+      color: var(--muted);
+    }
+
+    .stock-step.down:hover {
+      color: var(--red);
+      border-color: rgba(239, 68, 68, .4);
+      background: rgba(239, 68, 68, .06);
+    }
+
+    .stock-meter {
+      display: inline-flex;
+      align-items: center;
+      min-width: 82px;
+    }
+
+    .stock-number {
+      min-width: 26px;
+      text-align: center;
+      font-weight: 700;
+      color: var(--text);
+      font-variant-numeric: tabular-nums;
+    }
+
     /* Prod thumb small */
     .tbl-thumb {
       width: 36px;
@@ -8139,10 +8206,20 @@
     function trackZone(zone) { HEATMAP[zone] = (HEATMAP[zone] || 0) + 1; saveHeatmapLS(); const onAnaliticas = document.getElementById('sec-analiticas')?.style.display !== 'none'; if (onAnaliticas) Dash.renderHeatmap() }
 
     const Dash = {
-      renderInventory() { const tbody = document.getElementById('inv-tbody'); if (!tbody) return; this.renderInventoryFilters(); let list = PRODUCTS.filter(p => { const txt = invTextFilter.toLowerCase().trim(); const mt = !txt || [p.name, p.desc, getCategoryName(p.cat), getSubcategoryName(p.cat2)].join(' ').toLowerCase().includes(txt); let ok = true; if (invStatusFilter === 'stock') ok = (p.stock || 0) > 3; else if (invStatusFilter === 'bajo') ok = (p.stock || 0) > 0 && (p.stock || 0) <= 3; else if (invStatusFilter === 'agotado') ok = (p.stock || 0) === 0; else if (invStatusFilter !== 'todos') ok = p.cat === invStatusFilter || p.cat2 === invStatusFilter; return mt && ok }); if (!list.length) { tbody.innerHTML = '<tr><td colspan="6" class="tbl-empty">Sin resultados.</td></tr>'; return } tbody.innerHTML = list.map(p => { const s = p.stock || 0, pct = Math.min(100, Math.round((s / 15) * 100)), cls = s === 0 ? 'empty' : s <= 3 ? 'low' : '', badge = s === 0 ? '<span class="badge red">Agotado</span>' : s <= 3 ? '<span class="badge yellow">Stock bajo</span>' : '<span class="badge green">En stock</span>'; const media = p.images?.[0] ? `style="background-image:url('${p.images[0]}')"` : ''; return `<tr><td><div class="tbl-prod"><div class="inventory-thumb" ${media}>${p.images?.[0] ? '' : `<div style="display:flex;align-items:center;justify-content:center;width:100%;height:100%;opacity:.5">${PERFUME_SVG}</div>`}</div><div><div class="tbl-prod-name">${escapeHtml(p.name)}</div><div class="tbl-prod-sub">${escapeHtml(p.size || '35 ml · EDP')}</div></div></div></td><td>${escapeHtml(getCategoryName(p.cat))} / ${escapeHtml(getSubcategoryName(p.cat2))}</td><td>${s}<span class="stock-bar"><span class="stock-bar-fill ${cls}" style="width:${pct}%"></span></span></td><td>$${p.price.toLocaleString('es-AR')}</td><td>${badge}</td><td><button class="tbl-action" onclick="Dash.editProduct('${p.id}')">Editar</button><button class="tbl-action del" onclick="Dash.deleteProduct('${p.id}')">Eliminar</button></td></tr>` }).join('') },
+      renderInventory() { const tbody = document.getElementById('inv-tbody'); if (!tbody) return; this.renderInventoryFilters(); let list = PRODUCTS.filter(p => { const txt = invTextFilter.toLowerCase().trim(); const mt = !txt || [p.name, p.desc, getCategoryName(p.cat), getSubcategoryName(p.cat2)].join(' ').toLowerCase().includes(txt); let ok = true; if (invStatusFilter === 'stock') ok = (p.stock || 0) > 3; else if (invStatusFilter === 'bajo') ok = (p.stock || 0) > 0 && (p.stock || 0) <= 3; else if (invStatusFilter === 'agotado') ok = (p.stock || 0) === 0; else if (invStatusFilter !== 'todos') ok = p.cat === invStatusFilter || p.cat2 === invStatusFilter; return mt && ok }); if (!list.length) { tbody.innerHTML = '<tr><td colspan="6" class="tbl-empty">Sin resultados.</td></tr>'; return } tbody.innerHTML = list.map(p => { const s = p.stock || 0, pct = Math.min(100, Math.round((s / 15) * 100)), cls = s === 0 ? 'empty' : s <= 3 ? 'low' : '', badge = s === 0 ? '<span class="badge red">Agotado</span>' : s <= 3 ? '<span class="badge yellow">Stock bajo</span>' : '<span class="badge green">En stock</span>'; const media = p.images?.[0] ? `style="background-image:url('${p.images[0]}')"` : ''; return `<tr><td><div class="tbl-prod"><div class="inventory-thumb" ${media}>${p.images?.[0] ? '' : `<div style="display:flex;align-items:center;justify-content:center;width:100%;height:100%;opacity:.5">${PERFUME_SVG}</div>`}</div><div><div class="tbl-prod-name">${escapeHtml(p.name)}</div><div class="tbl-prod-sub">${escapeHtml(p.size || '35 ml · EDP')}</div></div></div></td><td>${escapeHtml(getCategoryName(p.cat))} / ${escapeHtml(getSubcategoryName(p.cat2))}</td><td><div class="stock-control"><div class="stock-arrows"><button class="stock-step up" type="button" onclick="Dash.adjustProductStock('${p.id}',1)" title="Aumentar stock" aria-label="Aumentar stock de ${escapeHtml(p.name)}">↑</button><button class="stock-step down" type="button" onclick="Dash.adjustProductStock('${p.id}',-1)" title="Disminuir stock" aria-label="Disminuir stock de ${escapeHtml(p.name)}">↓</button></div><div class="stock-meter"><span class="stock-number">${s}</span><span class="stock-bar"><span class="stock-bar-fill ${cls}" style="width:${pct}%"></span></span></div></div></td><td>$${p.price.toLocaleString('es-AR')}</td><td>${badge}</td><td><button class="tbl-action" onclick="Dash.editProduct('${p.id}')">Editar</button><button class="tbl-action del" onclick="Dash.deleteProduct('${p.id}')">Eliminar</button></td></tr>` }).join('') },
       renderInventoryFilters() { const row = document.getElementById('inv-filter-row'); if (!row) return; row.innerHTML = `<button class="fc ${invStatusFilter === 'todos' ? 'active' : ''}" data-f="todos" onclick="Dash.invFilter(this)">Todos</button><button class="fc ${invStatusFilter === 'stock' ? 'active' : ''}" data-f="stock" onclick="Dash.invFilter(this)">En stock</button><button class="fc ${invStatusFilter === 'bajo' ? 'active' : ''}" data-f="bajo" onclick="Dash.invFilter(this)">Stock bajo</button><button class="fc ${invStatusFilter === 'agotado' ? 'active' : ''}" data-f="agotado" onclick="Dash.invFilter(this)">Agotado</button>` + TAXONOMY.categories.map(c => `<button class="fc ${invStatusFilter === c.id ? 'active' : ''}" data-f="${c.id}" onclick="Dash.invFilter(this)">${escapeHtml(c.name)}</button>`).join('') },
       invFilter(btn) { document.querySelectorAll('#inv-filter-row .fc').forEach(b => b.classList.remove('active')); btn.classList.add('active'); invStatusFilter = btn.dataset.f; this.renderInventory() },
       filterInventory(val) { invTextFilter = val; this.renderInventory() },
+      adjustProductStock(id, delta) {
+        const product = PRODUCTS.find(p => p.id === id);
+        if (!product) return;
+        product.stock = Math.max(0, Number(product.stock || 0) + Number(delta || 0));
+        saveProductsLS();
+        this.renderInventory();
+        this.updatePanelKPIs();
+        if (typeof renderProducts === 'function') renderProducts();
+        if (typeof showToast === 'function') showToast(`Stock actualizado: ${product.stock}`);
+      },
       getOrderStatusBadgeClass(status) {
         const normalized = String(status || '').toLowerCase();
         if (normalized.includes('confirm')) return 'green';
@@ -10278,7 +10355,7 @@ const SugCenter = (() => {
       const txt = String(invTextFilter || '').toLowerCase().trim();
       const list = PRODUCTS.filter(p => (p.promoAssignments || []).includes(promoId)).filter(p => !txt || [p.name,p.desc,getCategoryName(p.cat),getSubcategoryName(p.cat2)].join(' ').toLowerCase().includes(txt));
       if (!list.length) { tbody.innerHTML = '<tr><td colspan="6" class="tbl-empty">Sin resultados.</td></tr>'; return; }
-      tbody.innerHTML = list.map(p => { const s = p.stock || 0, pct = Math.min(100, Math.round((s / 15) * 100)), cls = s === 0 ? 'empty' : s <= 3 ? 'low' : '', badge = s === 0 ? '<span class="badge red">Agotado</span>' : s <= 3 ? '<span class="badge yellow">Stock bajo</span>' : '<span class="badge green">En stock</span>'; const media = p.images?.[0] ? `style="background-image:url('${p.images[0]}')"` : ''; return `<tr><td><div class="tbl-prod"><div class="inventory-thumb" ${media}>${p.images?.[0] ? '' : `<div style="display:flex;align-items:center;justify-content:center;width:100%;height:100%;opacity:.5">${PERFUME_SVG}</div>`}</div><div><div class="tbl-prod-name">${escapeHtml(p.name)}</div><div class="tbl-prod-sub">${escapeHtml(p.size || '35 ml · EDP')}</div></div></div></td><td>${escapeHtml(getCategoryName(p.cat))} / ${escapeHtml(getSubcategoryName(p.cat2))}</td><td>${s}<span class="stock-bar"><span class="stock-bar-fill ${cls}" style="width:${pct}%"></span></span></td><td>$${p.price.toLocaleString('es-AR')}</td><td>${badge}</td><td><button class="tbl-action" onclick="Dash.editProduct('${p.id}')">Editar</button><button class="tbl-action del" onclick="Dash.deleteProduct('${p.id}')">Eliminar</button></td></tr>` }).join('');
+      tbody.innerHTML = list.map(p => { const s = p.stock || 0, pct = Math.min(100, Math.round((s / 15) * 100)), cls = s === 0 ? 'empty' : s <= 3 ? 'low' : '', badge = s === 0 ? '<span class="badge red">Agotado</span>' : s <= 3 ? '<span class="badge yellow">Stock bajo</span>' : '<span class="badge green">En stock</span>'; const media = p.images?.[0] ? `style="background-image:url('${p.images[0]}')"` : ''; return `<tr><td><div class="tbl-prod"><div class="inventory-thumb" ${media}>${p.images?.[0] ? '' : `<div style="display:flex;align-items:center;justify-content:center;width:100%;height:100%;opacity:.5">${PERFUME_SVG}</div>`}</div><div><div class="tbl-prod-name">${escapeHtml(p.name)}</div><div class="tbl-prod-sub">${escapeHtml(p.size || '35 ml · EDP')}</div></div></div></td><td>${escapeHtml(getCategoryName(p.cat))} / ${escapeHtml(getSubcategoryName(p.cat2))}</td><td><div class="stock-control"><div class="stock-arrows"><button class="stock-step up" type="button" onclick="Dash.adjustProductStock('${p.id}',1)" title="Aumentar stock" aria-label="Aumentar stock de ${escapeHtml(p.name)}">↑</button><button class="stock-step down" type="button" onclick="Dash.adjustProductStock('${p.id}',-1)" title="Disminuir stock" aria-label="Disminuir stock de ${escapeHtml(p.name)}">↓</button></div><div class="stock-meter"><span class="stock-number">${s}</span><span class="stock-bar"><span class="stock-bar-fill ${cls}" style="width:${pct}%"></span></span></div></div></td><td>$${p.price.toLocaleString('es-AR')}</td><td>${badge}</td><td><button class="tbl-action" onclick="Dash.editProduct('${p.id}')">Editar</button><button class="tbl-action del" onclick="Dash.deleteProduct('${p.id}')">Eliminar</button></td></tr>` }).join('');
     };
     Dash.renderInventoryFilters = function(){
       const row = document.getElementById('inv-filter-row'); if (!row) return;
