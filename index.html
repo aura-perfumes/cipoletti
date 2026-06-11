@@ -703,6 +703,10 @@
       text-align: center;
     }
 
+    .portal-bottle-fallback {
+      display: none;
+    }
+
     .portal-meta {
       font-size: .65rem;
       letter-spacing: .3em;
@@ -6383,7 +6387,7 @@
 
   <!-- ══ SCREEN 1: PORTAL GATE ══════════════════ -->
   <div id="s-portal" class="screen active">
-    <div class="portal-bottle" id="portal-media"><span class="portal-bottle-fallback">🫙</span></div>
+    <div class="portal-bottle" id="portal-media"><span class="portal-bottle-fallback" aria-hidden="true"></span></div>
     <div class="portal-shell">
       <div class="portal-brand anim d1">
         <div class="portal-brand-name" id="portal-brand-name">AURA</div>
@@ -7591,7 +7595,7 @@
     function saveTaxonomyLS() { saveJSON('aura_taxonomy', TAXONOMY) }
     function loadHeatmap() { return { ...DEFAULT_HEATMAP, ...safeParse('aura_heatmap', {}) } }
     function saveHeatmapLS() { saveJSON('aura_heatmap', HEATMAP) }
-    function loadStoreConfig() { return { ...DEFAULT_STORE_CONFIG, ...safeParse('aura_store_config', {}) } }
+    function loadStoreConfig() { return { ...DEFAULT_STORE_CONFIG, ...safeParse('aura_store_config', {}), ...safeParse('aura_store', {}) } }
     function saveStoreConfig() { saveJSON('aura_store_config', STORE) }
     function readFileAsDataURL(file) { return new Promise((resolve, reject) => { const fr = new FileReader(); fr.onload = () => resolve(fr.result); fr.onerror = reject; fr.readAsDataURL(file) }) }
     function formatDateTime(iso) { const d = new Date(iso); return d.toLocaleString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) }
@@ -7600,6 +7604,18 @@
     function getSubcategoryName(id) { return TAXONOMY.subcategories.find(s => s.id === id)?.name || id || '—' }
     function getSubcategoriesByCategory(catId) { return TAXONOMY.subcategories.filter(s => s.categoryId === catId) }
     function escapeHtml(s) { return String(s ?? '').replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m])) }
+    function escapeAttr(s) { return escapeHtml(s) }
+    function escapeJsAttr(s) { return escapeAttr(String(s ?? '').replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/[\n\r]/g, ' ')) }
+    function safeCssUrl(value) {
+      const url = String(value || '').trim();
+      if (!/^(https?:|data:image\/|blob:)/i.test(url)) return '';
+      return url.replace(/['"\\\n\r]/g, '');
+    }
+    async function sha256Hex(value) {
+      const data = new TextEncoder().encode(String(value || ''));
+      const hash = await crypto.subtle.digest('SHA-256', data);
+      return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('');
+    }
 
     let PRODUCTS = loadProducts();
     let ORDERS = loadOrders();
@@ -7871,7 +7887,7 @@
       function selectShippingMethod(method) { shippingMethod = method; deliveryCost = 0; selectedPos = null; const status = document.getElementById('ship-status'); if (status) status.textContent = ''; const input = document.getElementById('cust-addr'); if (input) input.value = ''; renderShippingUI(); refreshTotals(); }
       function onAddrInput(val) { if (ensureShippingMethod() !== 'gps') return; selectedPos = null; deliveryCost = 0; refreshTotals(); const btn = document.getElementById('btn-wa-cart'); if (btn) btn.disabled = true; clearTimeout(sugTimeout); if (val.length < 4) { closeSuggestions(); return } sugTimeout = setTimeout(() => fetchSuggestions(val), 400) }
       async function fetchSuggestions(q) { try { const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&addressdetails=1&limit=5&countrycodes=ar`; const res = await fetch(url, { headers: { 'Accept-Language': 'es', 'User-Agent': 'AURA-Parfum/1.0' } }); showSuggestions(await res.json()) } catch (e) { closeSuggestions() } }
-      function showSuggestions(results) { const box = document.getElementById('addr-suggestions'); if (!box) return; if (!results || !results.length) { closeSuggestions(); return } box.innerHTML = results.map((r, i) => `<div class="addr-sug-item" onclick="Cart.selectAddr(${i})" data-idx="${i}">${r.display_name}</div>`).join(''); box._results = results; box.classList.add('open'); box.style.display = 'block' }
+      function showSuggestions(results) { const box = document.getElementById('addr-suggestions'); if (!box) return; if (!results || !results.length) { closeSuggestions(); return } box.innerHTML = results.map((r, i) => `<div class="addr-sug-item" onclick="Cart.selectAddr(${i})" data-idx="${i}">${escapeHtml(r.display_name)}</div>`).join(''); box._results = results; box.classList.add('open'); box.style.display = 'block' }
       function closeSuggestions() { const box = document.getElementById('addr-suggestions'); if (box) { box.classList.remove('open'); box.style.display = 'none'; box._results = null } }
       function selectAddr(idx) { if (ensureShippingMethod() !== 'gps') return; const box = document.getElementById('addr-suggestions'); if (!box || !box._results) return; const r = box._results[idx]; selectedPos = { lat: parseFloat(r.lat), lng: parseFloat(r.lon), label: r.display_name }; const input = document.getElementById('cust-addr'); if (input) input.value = r.display_name; closeSuggestions(); calcFromPos(selectedPos.lat, selectedPos.lng, selectedPos.label) }
       function calcDelivery() { if (ensureShippingMethod() !== 'gps') return; if (selectedPos) { calcFromPos(selectedPos.lat, selectedPos.lng, selectedPos.label); return } const status = document.getElementById('ship-status'); if (!navigator.geolocation) { if (status) status.textContent = 'GPS no disponible. Ingresá tu dirección.'; return } const btn = document.getElementById('calc-btn'); if (btn) btn.classList.add('loading'); if (status) status.textContent = 'Obteniendo ubicación...'; navigator.geolocation.getCurrentPosition(pos => calcFromPos(pos.coords.latitude, pos.coords.longitude, 'Tu ubicación actual (GPS)'), () => { if (btn) btn.classList.remove('loading'); if (status) status.textContent = 'No se pudo obtener GPS. Ingresá tu dirección.' }, { timeout: 8000, enableHighAccuracy: true }) }
@@ -7888,7 +7904,7 @@
         refreshTotals();
       }
       function registerOrder(addr) { const customerName = document.getElementById('order-name').value.trim() || 'Cliente sin nombre'; const phone = document.getElementById('order-phone').value.trim() || 'Sin teléfono'; const notes = document.getElementById('order-notes').value.trim(); const order = { id: 'PED-' + Date.now().toString().slice(-6), customerName, phone, address: addr || 'No especificada', notes, shippingMethod: shippingMethod || 'coordinar', items: items.map(i => ({ id: i.id, name: i.name, qty: i.qty, price: i.price, size: i.size || '35 ml · EDP' })), subtotal: subtotal(), delivery: deliveryCost, total: total(), date: new Date().toISOString(), status: 'Pendiente de confirmación', channel: 'WhatsApp' }; ORDERS.unshift(order); saveOrdersLS(); upsertCustomerFromOrder(order); Dash.renderPedidos(); Dash.renderClientes(); Dash.updatePanelKPIs(); Dash.initAnalytics(); return order }
-      function confirmWhatsApp() { if (!items.length) return; const name = document.getElementById('order-name').value.trim(); if (!name) { showToast('Ingresá al menos el nombre del cliente.', true); return } const modes = getShippingModes(); const addr = (document.getElementById('cust-addr').value.trim()) || 'No especificada'; const phone = document.getElementById('order-phone').value.trim(); const notes = document.getElementById('order-notes').value.trim(); if ((modes.gps || modes.zone) && deliveryCost <= 0) { showToast('Seleccioná o calculá el envío.', true); return } const order = registerOrder(addr); const waNum = STORE.waNum || config.waNum || '5492942444236'; const itemsStr = items.map(i => `• ${i.name} x${i.qty} — $${(i.price * i.qty).toLocaleString('es-AR')}`).join('\n'); const envioLabel = shippingMethod === 'zone' ? 'Zona fija' : shippingMethod === 'gps' ? 'GPS' : 'A coordinar'; const envioStr = deliveryCost > 0 ? `$${deliveryCost.toLocaleString('es-AR')}` : 'A calcular'; const { discountLines } = getAppliedDiscounts(); const discountText = discountLines.map(({ promo, discount }) => `\n💚 Descuento promo ${promo.name}: −$${discount.saved.toLocaleString('es-AR')}`).join(''); const templateData = { tienda: STORE.waName || 'AURA — Tienda Online', pedido_id: order.id, nombre: name, telefono: phone ? `\nTeléfono: ${phone}` : '', productos: itemsStr, subtotal: `$${subtotal().toLocaleString('es-AR')}`, metodo_envio: envioLabel, envio: envioStr, descuentos: discountText, total: `$${total().toLocaleString('es-AR')}`, direccion: addr, notas: notes ? `\n📝 Notas: ${notes}` : '' }; const finalMessage = buildWhatsAppMessageFromTemplate(STORE.waTemplate || getDefaultWATemplate(), templateData); const msg = encodeURIComponent(finalMessage); window.open(`https://wa.me/${waNum}?text=${msg}`, '_blank'); items = []; resetShippingState(true); save(); document.getElementById('order-name').value = ''; document.getElementById('order-phone').value = ''; document.getElementById('order-notes').value = ''; close(); render() }
+      function confirmWhatsApp() { if (!items.length) return; const name = document.getElementById('order-name').value.trim(); if (!name) { showToast('Ingresá al menos el nombre del cliente.', true); return } const modes = getShippingModes(); const addr = (document.getElementById('cust-addr').value.trim()) || 'No especificada'; const phone = document.getElementById('order-phone').value.trim(); const notes = document.getElementById('order-notes').value.trim(); if ((modes.gps || modes.zone) && deliveryCost <= 0) { showToast('Seleccioná o calculá el envío.', true); return } const order = registerOrder(addr); const waNum = STORE.waNum || config.waNum || '5492942444236'; const itemsStr = items.map(i => `• ${i.name} x${i.qty} — $${(i.price * i.qty).toLocaleString('es-AR')}`).join('\n'); const envioLabel = shippingMethod === 'zone' ? 'Zona fija' : shippingMethod === 'gps' ? 'GPS' : 'A coordinar'; const envioStr = deliveryCost > 0 ? `$${deliveryCost.toLocaleString('es-AR')}` : 'A calcular'; const { discountLines } = getAppliedDiscounts(); const discountText = discountLines.map(({ promo, discount }) => `\n💚 Descuento promo ${promo.name}: −$${discount.saved.toLocaleString('es-AR')}`).join(''); const templateData = { tienda: STORE.waName || 'AURA — Tienda Online', pedido_id: order.id, nombre: name, telefono: phone ? `\nTeléfono: ${phone}` : '', productos: itemsStr, subtotal: `$${subtotal().toLocaleString('es-AR')}`, metodo_envio: envioLabel, envio: envioStr, descuentos: discountText, total: `$${total().toLocaleString('es-AR')}`, direccion: addr, notas: notes ? `\n📝 Notas: ${notes}` : '' }; const finalMessage = buildWhatsAppMessageFromTemplate(STORE.waTemplate || getDefaultWATemplate(), templateData); const msg = encodeURIComponent(finalMessage); window.open(`https://wa.me/${waNum}?text=${msg}`, '_blank', 'noopener,noreferrer'); items = []; resetShippingState(true); save(); document.getElementById('order-name').value = ''; document.getElementById('order-phone').value = ''; document.getElementById('order-notes').value = ''; close(); render() }
       load();
       return { open, close, addItem, updateQty, remove, total, count, items: () => items, onAddrInput, selectAddr, calcDelivery, confirmWhatsApp, closeSuggestions, selectShippingMethod, selectZone, updateCartBadge };
     })();
@@ -8171,7 +8187,7 @@
         const isFav = typeof Favorites !== 'undefined' && Favorites.has(p.id);
         const isSinStock = typeof p.stock === 'number' && p.stock <= 0;
         const ribbon = isSinStock ? '<div class="ribbon">Sin stock</div>' : '';
-        return `<div class="prod-card${isSinStock ? ' sin-stock' : ''}" onclick="App.openProductDetail('${p.id}')" data-click-zone="productCard"><div class="prod-thumb img-box">${thumbContent}${ribbon}${p.badge ? `<span class="prod-badge">${escapeHtml(p.badge)}</span>` : ''}<button class="prod-heart${isFav ? ' liked' : ''}" data-pid="${p.id}" onclick="event.stopPropagation();Favorites.toggle('${p.id}',this)" title="Favorito">♡</button></div><div class="prod-body"><div class="prod-cat">${escapeHtml(getCategoryName(p.cat))} / ${escapeHtml(getSubcategoryName(p.cat2))}</div><div class="prod-name">${escapeHtml(p.name)}</div><div class="prod-size">${escapeHtml(p.size || '35 ml · EDP')}</div><div class="prod-footer"><span class="prod-price">$${p.price.toLocaleString('es-AR')}</span><button class="prod-atc" onclick="event.stopPropagation();Cart.addItem(PRODUCTS.find(x=>x.id==='${p.id}'))">+ Añadir</button></div></div></div>`;
+        return `<div class="prod-card${isSinStock ? ' sin-stock' : ''}" onclick="App.openProductDetail('${p.id}')" data-click-zone="productCard"><div class="prod-thumb img-box">${thumbContent}${ribbon}${p.badge ? `<span class="prod-badge">${escapeHtml(p.badge)}</span>` : ''}<button class="prod-heart${isFav ? ' liked' : ''}" data-pid="${p.id}" onclick="event.stopPropagation();Favorites.toggle('${p.id}',this)" title="Favorito">♡</button></div><div class="prod-body"><div class="prod-cat">${escapeHtml(getCategoryName(p.cat))} / ${escapeHtml(getSubcategoryName(p.cat2))}</div><div class="prod-name">${escapeHtml(p.name)}</div><div class="prod-size">${escapeHtml(p.size || '35 ml · EDP')}</div><div class="prod-footer"><span class="prod-price">$${Number(p.price || 0).toLocaleString('es-AR')}</span><button class="prod-atc" onclick="event.stopPropagation();Cart.addItem(PRODUCTS.find(x=>x.id==='${p.id}'))">+ Añadir</button></div></div></div>`;
       }).join('') : '<div class="section-card" style="grid-column:1/-1"><div class="tbl-empty">No hay fragancias para ese filtro.</div></div>';
       initProductCarousels(grid);
     }
@@ -8206,7 +8222,7 @@
     function trackZone(zone) { HEATMAP[zone] = (HEATMAP[zone] || 0) + 1; saveHeatmapLS(); const onAnaliticas = document.getElementById('sec-analiticas')?.style.display !== 'none'; if (onAnaliticas) Dash.renderHeatmap() }
 
     const Dash = {
-      renderInventory() { const tbody = document.getElementById('inv-tbody'); if (!tbody) return; this.renderInventoryFilters(); let list = PRODUCTS.filter(p => { const txt = invTextFilter.toLowerCase().trim(); const mt = !txt || [p.name, p.desc, getCategoryName(p.cat), getSubcategoryName(p.cat2)].join(' ').toLowerCase().includes(txt); let ok = true; if (invStatusFilter === 'stock') ok = (p.stock || 0) > 3; else if (invStatusFilter === 'bajo') ok = (p.stock || 0) > 0 && (p.stock || 0) <= 3; else if (invStatusFilter === 'agotado') ok = (p.stock || 0) === 0; else if (invStatusFilter !== 'todos') ok = p.cat === invStatusFilter || p.cat2 === invStatusFilter; return mt && ok }); if (!list.length) { tbody.innerHTML = '<tr><td colspan="6" class="tbl-empty">Sin resultados.</td></tr>'; return } tbody.innerHTML = list.map(p => { const s = p.stock || 0, pct = Math.min(100, Math.round((s / 15) * 100)), cls = s === 0 ? 'empty' : s <= 3 ? 'low' : '', badge = s === 0 ? '<span class="badge red">Agotado</span>' : s <= 3 ? '<span class="badge yellow">Stock bajo</span>' : '<span class="badge green">En stock</span>'; const media = p.images?.[0] ? `style="background-image:url('${p.images[0]}')"` : ''; return `<tr><td><div class="tbl-prod"><div class="inventory-thumb" ${media}>${p.images?.[0] ? '' : `<div style="display:flex;align-items:center;justify-content:center;width:100%;height:100%;opacity:.5">${PERFUME_SVG}</div>`}</div><div><div class="tbl-prod-name">${escapeHtml(p.name)}</div><div class="tbl-prod-sub">${escapeHtml(p.size || '35 ml · EDP')}</div></div></div></td><td>${escapeHtml(getCategoryName(p.cat))} / ${escapeHtml(getSubcategoryName(p.cat2))}</td><td><div class="stock-control"><div class="stock-arrows"><button class="stock-step up" type="button" onclick="Dash.adjustProductStock('${p.id}',1)" title="Aumentar stock" aria-label="Aumentar stock de ${escapeHtml(p.name)}">↑</button><button class="stock-step down" type="button" onclick="Dash.adjustProductStock('${p.id}',-1)" title="Disminuir stock" aria-label="Disminuir stock de ${escapeHtml(p.name)}">↓</button></div><div class="stock-meter"><span class="stock-number">${s}</span><span class="stock-bar"><span class="stock-bar-fill ${cls}" style="width:${pct}%"></span></span></div></div></td><td>$${p.price.toLocaleString('es-AR')}</td><td>${badge}</td><td><button class="tbl-action" onclick="Dash.editProduct('${p.id}')">Editar</button><button class="tbl-action del" onclick="Dash.deleteProduct('${p.id}')">Eliminar</button></td></tr>` }).join('') },
+      renderInventory() { const tbody = document.getElementById('inv-tbody'); if (!tbody) return; this.renderInventoryFilters(); let list = PRODUCTS.filter(p => { const txt = invTextFilter.toLowerCase().trim(); const mt = !txt || [p.name, p.desc, getCategoryName(p.cat), getSubcategoryName(p.cat2)].join(' ').toLowerCase().includes(txt); let ok = true; if (invStatusFilter === 'stock') ok = (p.stock || 0) > 3; else if (invStatusFilter === 'bajo') ok = (p.stock || 0) > 0 && (p.stock || 0) <= 3; else if (invStatusFilter === 'agotado') ok = (p.stock || 0) === 0; else if (invStatusFilter !== 'todos') ok = p.cat === invStatusFilter || p.cat2 === invStatusFilter; return mt && ok }); if (!list.length) { tbody.innerHTML = '<tr><td colspan="6" class="tbl-empty">Sin resultados.</td></tr>'; return } tbody.innerHTML = list.map(p => { const s = Number(p.stock || 0), pct = Math.min(100, Math.round((s / 15) * 100)), cls = s === 0 ? 'empty' : s <= 3 ? 'low' : '', badge = s === 0 ? '<span class="badge red">Agotado</span>' : s <= 3 ? '<span class="badge yellow">Stock bajo</span>' : '<span class="badge green">En stock</span>'; const img = safeCssUrl(p.images?.[0]); const media = img ? `style="background-image:url('${img}')"` : ''; return `<tr><td><div class="tbl-prod"><div class="inventory-thumb" ${media}>${img ? '' : `<div style="display:flex;align-items:center;justify-content:center;width:100%;height:100%;opacity:.5">${PERFUME_SVG}</div>`}</div><div><div class="tbl-prod-name">${escapeHtml(p.name)}</div><div class="tbl-prod-sub">${escapeHtml(p.size || '35 ml · EDP')}</div></div></div></td><td>${escapeHtml(getCategoryName(p.cat))} / ${escapeHtml(getSubcategoryName(p.cat2))}</td><td><div class="stock-control"><div class="stock-arrows"><button class="stock-step up" type="button" onclick="Dash.adjustProductStock('${escapeJsAttr(p.id)}',1)" title="Aumentar stock" aria-label="Aumentar stock de ${escapeAttr(p.name)}">↑</button><button class="stock-step down" type="button" onclick="Dash.adjustProductStock('${escapeJsAttr(p.id)}',-1)" title="Disminuir stock" aria-label="Disminuir stock de ${escapeAttr(p.name)}">↓</button></div><div class="stock-meter"><span class="stock-number">${s}</span><span class="stock-bar"><span class="stock-bar-fill ${cls}" style="width:${pct}%"></span></span></div></div></td><td>$${Number(p.price || 0).toLocaleString('es-AR')}</td><td>${badge}</td><td><button class="tbl-action" onclick="Dash.editProduct('${escapeJsAttr(p.id)}')">Editar</button><button class="tbl-action del" onclick="Dash.deleteProduct('${escapeJsAttr(p.id)}')">Eliminar</button></td></tr>` }).join('') },
       renderInventoryFilters() { const row = document.getElementById('inv-filter-row'); if (!row) return; row.innerHTML = `<button class="fc ${invStatusFilter === 'todos' ? 'active' : ''}" data-f="todos" onclick="Dash.invFilter(this)">Todos</button><button class="fc ${invStatusFilter === 'stock' ? 'active' : ''}" data-f="stock" onclick="Dash.invFilter(this)">En stock</button><button class="fc ${invStatusFilter === 'bajo' ? 'active' : ''}" data-f="bajo" onclick="Dash.invFilter(this)">Stock bajo</button><button class="fc ${invStatusFilter === 'agotado' ? 'active' : ''}" data-f="agotado" onclick="Dash.invFilter(this)">Agotado</button>` + TAXONOMY.categories.map(c => `<button class="fc ${invStatusFilter === c.id ? 'active' : ''}" data-f="${c.id}" onclick="Dash.invFilter(this)">${escapeHtml(c.name)}</button>`).join('') },
       invFilter(btn) { document.querySelectorAll('#inv-filter-row .fc').forEach(b => b.classList.remove('active')); btn.classList.add('active'); invStatusFilter = btn.dataset.f; this.renderInventory() },
       filterInventory(val) { invTextFilter = val; this.renderInventory() },
@@ -8238,7 +8254,7 @@
         t.innerHTML = list.map(o => {
           const badgeClass = this.getOrderStatusBadgeClass(o.status);
           return `<tr>
-            <td><strong>${o.id}</strong></td>
+            <td><strong>${escapeHtml(o.id)}</strong></td>
             <td>${escapeHtml(o.customerName)}<div class="tbl-prod-sub">${escapeHtml(o.phone || 'Sin teléfono')}</div></td>
             <td>${escapeHtml(o.items.map(i => `${i.name} x${i.qty}`).join(', '))}</td>
             <td>$${Number(o.total).toLocaleString('es-AR')}</td>
@@ -8247,10 +8263,10 @@
             <td><span class="badge ${badgeClass}">${escapeHtml(o.status || 'Pendiente de confirmación')}</span></td>
             <td>
               <div class="order-actions-cell">
-                <button class="tbl-action" onclick="Dash.editOrder('${o.id}')">Editar</button>
-                <button class="tbl-action ok" onclick="Dash.setOrderStatus('${o.id}','Confirmado')">Confirmar</button>
-                <button class="tbl-action warn" onclick="Dash.setOrderStatus('${o.id}','Denegado')">Denegar</button>
-                <button class="tbl-action del" onclick="Dash.deleteOrder('${o.id}')">Eliminar</button>
+                <button class="tbl-action" onclick="Dash.editOrder('${escapeJsAttr(o.id)}')">Editar</button>
+                <button class="tbl-action ok" onclick="Dash.setOrderStatus('${escapeJsAttr(o.id)}','Confirmado')">Confirmar</button>
+                <button class="tbl-action warn" onclick="Dash.setOrderStatus('${escapeJsAttr(o.id)}','Denegado')">Denegar</button>
+                <button class="tbl-action del" onclick="Dash.deleteOrder('${escapeJsAttr(o.id)}')">Eliminar</button>
               </div>
             </td>
           </tr>`;
@@ -8320,7 +8336,7 @@
       },
       renderClientes() { const t = document.getElementById('cli-tbody'); if (!t) return; const q = (document.getElementById('cli-search')?.value || '').toLowerCase().trim(); let list = CUSTOMERS.filter(c => !q || [c.name, c.phone, c.segment].join(' ').toLowerCase().includes(q)); if (!list.length) { t.innerHTML = '<tr><td colspan="6" class="tbl-empty">0 clientes</td></tr>'; return } t.innerHTML = list.map(c => `<tr><td><strong>${escapeHtml(c.name)}</strong></td><td>${escapeHtml(c.phone || 'Sin teléfono')}</td><td>${c.orders || 0}</td><td>$${Number(c.totalSpent || 0).toLocaleString('es-AR')}</td><td>${c.lastOrder ? formatDateTime(c.lastOrder) : '—'}</td><td><span class="badge ${c.segment === 'VIP' ? 'green' : 'gray'}">${escapeHtml(c.segment || 'Activo')}</span></td></tr>`).join('') },
       filterClientes() { this.renderClientes() },
-      renderHeatmap() { const box = document.getElementById('heatmap-grid'); if (!box) return; const labels = { hero: 'Hero / portada', filters: 'Filtros de catálogo', productCard: 'Fichas de producto', addToCart: 'Botones agregar', cart: 'Carrito', whatsapp: 'CTA WhatsApp', nav: 'Navegación', about: 'Nosotros / contacto' }; const total = Object.values(HEATMAP).reduce((a, b) => a + b, 0) || 1; box.innerHTML = Object.entries(labels).map(([k, label]) => { const val = HEATMAP[k] || 0; const intensity = Math.max(.08, Math.min(.95, val / Math.max(...Object.values(HEATMAP), 1))); const pct = Math.round((val / total) * 100); return `<div class="heat-cell" style="--intensity:${intensity}"><div class="heat-zone">${label}</div><div class="heat-value">${val}</div><div class="heat-sub">${pct}% de interacción</div></div>` }).join('') },
+      renderHeatmap() { const box = document.getElementById('heatmap-grid'); if (!box) return; const labels = { hero: 'Hero / portada', filters: 'Filtros de catálogo', productCard: 'Fichas de producto', addToCart: 'Botones agregar', cart: 'Carrito', whatsapp: 'CTA WhatsApp', nav: 'Navegación', about: 'Nosotros / contacto' }; const total = Object.values(HEATMAP).reduce((a, b) => a + Number(b || 0), 0) || 1; const max = Math.max(...Object.values(HEATMAP).map(v => Number(v || 0)), 1); box.innerHTML = Object.entries(labels).map(([k, label]) => { const val = Number(HEATMAP[k] || 0); const intensity = Math.max(.08, Math.min(.95, val / max)); const pct = Math.round((val / total) * 100); return `<div class="heat-cell" style="--intensity:${intensity}"><div class="heat-zone">${escapeHtml(label)}</div><div class="heat-value">${val}</div><div class="heat-sub">${pct}% de interacción</div></div>` }).join('') },
       initAnalytics() { const lineCtx = document.getElementById('anal-line-chart'); const donutCtx = document.getElementById('anal-donut-chart'); const revenue = getRevenueSeries(); if (lineCtx) { if (analLineChart) analLineChart.destroy(); analLineChart = new Chart(lineCtx, { type: 'line', data: { labels: revenue.labels, datasets: [{ data: revenue.data, borderColor: '#10B981', backgroundColor: 'rgba(16,185,129,.08)', tension: .35, pointRadius: 4, pointBackgroundColor: '#10B981', fill: true }] }, options: { plugins: { legend: { display: false } }, scales: { x: { grid: { display: false }, ticks: { color: '#94a3b8', font: { size: 10 } } }, y: { grid: { color: 'rgba(0,0,0,.05)' }, ticks: { color: '#94a3b8', font: { size: 10 }, callback: v => '$' + Number(v).toLocaleString('es-AR') } } }, responsive: true, maintainAspectRatio: true } }) } if (donutCtx) { const cats = {}; PRODUCTS.forEach(p => { const n = getCategoryName(p.cat); cats[n] = (cats[n] || 0) + (p.stock || 0) }); if (analDonutChart) analDonutChart.destroy(); analDonutChart = new Chart(donutCtx, { type: 'doughnut', data: { labels: Object.keys(cats), datasets: [{ data: Object.values(cats), backgroundColor: ['#F87171', '#92400e', '#8b5cf6', '#10B981', '#0ea5e9', '#f59e0b'], borderWidth: 0 }] }, options: { plugins: { legend: { position: 'right', labels: { font: { size: 11 }, color: '#334155', boxWidth: 14 } } }, responsive: true, maintainAspectRatio: true, cutout: '60%' } }) } const totalVentas = ORDERS.reduce((s, o) => s + o.total, 0); const ticket = ORDERS.length ? Math.round(totalVentas / ORDERS.length) : 0; document.getElementById('an-ticket').textContent = '$' + ticket.toLocaleString('es-AR'); document.getElementById('an-ticket-sub').textContent = ORDERS.length ? `${ORDERS.length} pedidos registrados` : 'Sin datos aún'; document.getElementById('an-pedmes').textContent = ORDERS.length; document.getElementById('an-pedmes-sub').textContent = ORDERS.length ? 'Pedidos acumulados' : 'Sin datos aún'; document.getElementById('an-clientes').textContent = CUSTOMERS.length; document.getElementById('an-agotados').textContent = PRODUCTS.filter(p => (p.stock || 0) === 0).length; this.renderHeatmap() },
       updatePanelKPIs() { const valor = PRODUCTS.reduce((s, p) => s + p.price * (p.stock || 0), 0); const skus = PRODUCTS.reduce((s, p) => s + (p.stock || 0), 0); const ingresos = ORDERS.reduce((s, o) => s + o.total, 0); document.getElementById('kpi-skus').textContent = skus; document.getElementById('kpi-valor').textContent = '$' + valor.toLocaleString('es-AR'); document.getElementById('kpi-ingresos').textContent = '$' + ingresos.toLocaleString('es-AR'); document.getElementById('kpi-ingresos-sub').textContent = ORDERS.length ? `↗ ${ORDERS.length} pedidos registrados` : '↗ Sin datos aún' },
       populateProductSelects() { const catSel = document.getElementById('ap-cat'); if (catSel) { catSel.innerHTML = TAXONOMY.categories.map(c => `<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('') } const parent = document.getElementById('tax-parent-cat'); if (parent) { parent.innerHTML = TAXONOMY.categories.map(c => `<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('') } this.syncSubcategorySelect() },
@@ -8605,11 +8621,19 @@ renderConfigWAPreview();
       refreshConfigAccordionHeights();
     }
 
+    const ADMIN_PASSWORD_SHA256 = '97f15bfd46a8576484ffbdafd93108f3e9c0c4ddadbfe3f7bb010f00ce2d2193';
+    const markStaffLoginError = () => {
+      const input = document.getElementById('staff-pwd');
+      if (!input) return;
+      input.style.borderColor = '#ef4444';
+      setTimeout(() => input.style.borderColor = '', 1200);
+    };
+
     const App = {
       show(id) { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); const el = document.getElementById(id); if (el) el.classList.add('active'); if (id === 's-dashboard') { setTimeout(() => { initChart(); Dash.renderInventory(); Dash.renderPedidos(); Dash.renderClientes(); Dash.updatePanelKPIs(); Dash.renderTaxonomy(); PromoAdmin.render() }, 80) } if (id === 's-store') { renderProducts(); applyStoreConfig() } window.scrollTo(0, 0) },
       goStaff() { this.show('s-staff-gate'); document.getElementById('staff-pwd').focus() },
       goStore() { this.show('s-store'); setTimeout(() => { const st = document.getElementById('s-store'); if (st) st.scrollTo({ top: 0, behavior: 'instant' }) }, 30) },
-      staffLogin() { const pwd = document.getElementById('staff-pwd').value.trim(); if (pwd === 'piromagu2026') { this.show('s-dashboard') } else { document.getElementById('staff-pwd').style.borderColor = '#ef4444'; setTimeout(() => document.getElementById('staff-pwd').style.borderColor = '', 1200) } },
+      async staffLogin() { const pwd = document.getElementById('staff-pwd').value.trim(); try { if (crypto?.subtle && await sha256Hex(pwd) === ADMIN_PASSWORD_SHA256) { this.show('s-dashboard') } else { markStaffLoginError() } } catch (e) { markStaffLoginError() } },
       togglePwd() { const inp = document.getElementById('staff-pwd'); inp.type = inp.type === 'password' ? 'text' : 'password' },
       dashNav(btn, section) { document.querySelectorAll('.dash-nav-item').forEach(b => b.classList.remove('active')); if (btn) btn.classList.add('active');['panel', 'inventario', 'pedidos', 'clientes', 'analiticas', 'config'].forEach(s => { const el = document.getElementById('sec-' + s); if (el) el.style.display = s === section ? '' : 'none' }); if (section === 'inventario') Dash.renderInventory(); else if (section === 'pedidos') Dash.renderPedidos(); else if (section === 'clientes') Dash.renderClientes(); else if (section === 'analiticas') setTimeout(() => Dash.initAnalytics(), 80); else if (section === 'config') setTimeout(() => { Dash.renderTaxonomy(); PromoAdmin.render(); Dash.initConfigTabs(); }, 50) },
       chartPeriod(p, btn) { document.querySelectorAll('.chart-tab').forEach(b => b.classList.remove('active')); btn.classList.add('active'); initChart(p) },
@@ -8671,6 +8695,34 @@ renderConfigWAPreview();
   <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-storage-compat.js"></script>
   <script>
+    /*
+      Hosting/security headers (configure in Firebase Hosting, Netlify, Vercel or the web server):
+      Content-Security-Policy: default-src 'self'; script-src 'self' https://www.gstatic.com https://*.firebaseio.com https://*.googleapis.com 'unsafe-inline'; connect-src 'self' https://*.firebaseio.com https://*.googleapis.com https://*.googleusercontent.com https://nominatim.openstreetmap.org https://wa.me; img-src 'self' data: blob: https:; style-src 'self' 'unsafe-inline'; frame-ancestors 'none'; base-uri 'self'; form-action 'self' https://wa.me
+      X-Frame-Options: DENY
+      X-Content-Type-Options: nosniff
+    */
+
+    /*
+      Firebase Realtime Database rules to apply from Firebase Console > Realtime Database > Rules
+      or with Firebase CLI. Enable Firebase Auth > Anonymous provider so this static client
+      gets an authenticated session. For true admin-only writes, replace auth != null with
+      a custom-claims rule issued by a backend.
+      {
+        "rules": {
+          "aura_sync": {
+            ".read": "auth != null",
+            ".write": "auth != null"
+          },
+          "$other": {
+            ".read": false,
+            ".write": false
+          }
+        }
+      }
+
+      Google Cloud Console > APIs & Services > Credentials > API key:
+      restrict the key below to the production domain(s) in "Application restrictions > Websites".
+    */
     const firebaseConfig = {
       apiKey: "AIzaSyDPXcIHmLdv8jtfIPMJ8OmQYR8xRbT9Y-Y",
       authDomain: "auracipoletti.firebaseapp.com",
@@ -8683,6 +8735,7 @@ renderConfigWAPreview();
 
     if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
     const rtdb = firebase.database ? firebase.database() : null;
+    const auth = firebase.auth ? firebase.auth() : null;
     const firestore = firebase.firestore ? firebase.firestore() : null;
     const storage = firebase.storage ? firebase.storage() : null;
     console.log(rtdb ? 'Firebase Realtime Database conectado' : 'Firebase conectado sin Realtime Database');
@@ -8703,6 +8756,18 @@ renderConfigWAPreview();
     window.__syncRealtimeDb = rtdb;
     window.__syncFirestore = firestore;
     window.__syncStorage = storage;
+
+    async function ensureFirebaseAuth() {
+      if (!auth) return null;
+      if (auth.currentUser) return auth.currentUser;
+      try {
+        const cred = await auth.signInAnonymously();
+        return cred.user || auth.currentUser;
+      } catch (err) {
+        console.log('FIREBASE AUTH ERROR ->', err.message);
+        return null;
+      }
+    }
 
     function applyNosotrosData(vals) {
       vals = vals || {};
@@ -8784,7 +8849,30 @@ renderConfigWAPreview();
       const baseSet = LS.set.bind(LS);
       const timers = {};
       const SYNC_BUILD = 'rtdb-sync-2026-05-01-2031';
+      const PENDING_QUEUE_KEY = 'aura_sync_pending_queue';
       function hasLocalSyncKey(key) { return localStorage.getItem('aura_' + key) !== null; }
+      function loadPendingQueue() { try { return JSON.parse(localStorage.getItem(PENDING_QUEUE_KEY) || '{}') || {}; } catch (e) { return {}; } }
+      function savePendingQueue(queue) { try { localStorage.setItem(PENDING_QUEUE_KEY, JSON.stringify(queue || {})); } catch (e) { } }
+      function markPendingKey(key, value) {
+        const queue = loadPendingQueue();
+        queue[key] = { value: safeClone(value), updatedAt: new Date().toISOString() };
+        savePendingQueue(queue);
+      }
+      async function flushPendingQueue() {
+        const queue = loadPendingQueue();
+        for (const [key, entry] of Object.entries(queue)) {
+          if (!syncKeys.includes(key)) continue;
+          try {
+            await writeRemoteKey(key, entry.value);
+            delete queue[key];
+            savePendingQueue(queue);
+          } catch (err) {
+            setSyncStatus('error', 'pendiente ' + key + ': ' + err.message, true);
+            return;
+          }
+        }
+        if (!Object.keys(queue).length) localStorage.removeItem(PENDING_QUEUE_KEY);
+      }
       function isDefaultProductsList(list) {
         return Array.isArray(list)
           && Array.isArray(DEFAULT_PRODUCTS)
@@ -8874,6 +8962,7 @@ renderConfigWAPreview();
       async function readRemoteKey(key) {
         const target = syncRef(key);
         if (!target) return { exists: false, value: undefined };
+        await ensureFirebaseAuth();
         if (target.type === 'rtdb') {
           const snap = await target.ref.once('value');
           return { exists: snap.exists(), value: snap.exists() ? snap.val()?.value : undefined };
@@ -8885,12 +8974,14 @@ renderConfigWAPreview();
         const payload = { value, updatedAt: new Date().toISOString(), source: window.__syncClientId };
         const target = syncRef(key);
         if (!target) throw new Error('Firebase Database no disponible');
+        await ensureFirebaseAuth();
         if (target.type === 'rtdb') return target.ref.set(payload);
         return target.ref.set(payload);
       }
       function listenRemoteKey(key, callback) {
         const target = syncRef(key);
         if (!target) return;
+        ensureFirebaseAuth().finally(() => {
         if (target.type === 'rtdb') {
           target.ref.on('value', snap => {
             if (!snap.exists()) return;
@@ -8902,11 +8993,13 @@ renderConfigWAPreview();
           if (!doc.exists) return;
           callback(doc.data() ? doc.data().value : null);
         });
+        });
       }
 
       async function pushKey(key) {
+        let value;
         try {
-          let value = safeClone(LS.get(key));
+          value = safeClone(LS.get(key));
           if (typeof value === 'undefined' || value === null) return;
           // Firestore docs are capped at 1MB, so local data images are uploaded to Storage first.
           if (key === 'products' && Array.isArray(value)) {
@@ -8936,6 +9029,7 @@ renderConfigWAPreview();
           window.__syncReady = true;
           setSyncStatus('ready', 'guardado ' + key + ' en Realtime Database', false);
         } catch (err) {
+          markPendingKey(key, value);
           setSyncStatus('error', key + ': ' + err.message, true);
         }
       }
@@ -8954,6 +9048,7 @@ renderConfigWAPreview();
         const key = event.key.replace(/^aura_/, '');
         if (syncKeys.includes(key)) rerenderSyncedKey(key);
       });
+      window.addEventListener('online', () => flushPendingQueue());
 
       window.saveProductsLS = function () {
         // Save full products (with images) to localStorage
@@ -8991,7 +9086,7 @@ renderConfigWAPreview();
           const localFallbacks = {
             products: hasLocalSyncKey('products') ? PRODUCTS : null,
             taxonomy: hasLocalSyncKey('taxonomy') ? TAXONOMY : null,
-            store: hasLocalSyncKey('store') ? STORE : null,
+            store: (hasLocalSyncKey('store') || localStorage.getItem('aura_store_config') !== null) ? STORE : null,
             orders: hasLocalSyncKey('orders') ? ORDERS : null,
             customers: hasLocalSyncKey('customers') ? CUSTOMERS : null,
             heatmap: hasLocalSyncKey('heatmap') ? HEATMAP : null,
@@ -9047,6 +9142,7 @@ renderConfigWAPreview();
           rerenderSyncedKey('heatmap');
           rerenderSyncedKey('nosotros');
           rerenderSyncedKey('promos');
+          await flushPendingQueue();
           window.__syncReady = true;
           setSyncStatus('ready', 'escuchando ' + syncKeys.length + ' claves en Realtime Database', !!localStorage.getItem('aura_sync_debug'));
         } catch (err) {
@@ -9897,7 +9993,7 @@ const SugCenter = (() => {
             <div class="sug-card-cat">${escapeHtml(getCategoryName(p.cat))} · ${escapeHtml(getSubcategoryName(p.cat2))}</div>
             <div class="sug-card-name">${escapeHtml(p.name)}</div>
             <div class="sug-card-footer">
-              <span class="sug-card-price">$${p.price.toLocaleString('es-AR')}</span>
+              <span class="sug-card-price">$${Number(p.price || 0).toLocaleString('es-AR')}</span>
               <button class="sug-card-btn" onclick="SugCenter.addToCart('${p.id}')">
                 🛍 Comprar
               </button>
@@ -10355,7 +10451,7 @@ const SugCenter = (() => {
       const txt = String(invTextFilter || '').toLowerCase().trim();
       const list = PRODUCTS.filter(p => (p.promoAssignments || []).includes(promoId)).filter(p => !txt || [p.name,p.desc,getCategoryName(p.cat),getSubcategoryName(p.cat2)].join(' ').toLowerCase().includes(txt));
       if (!list.length) { tbody.innerHTML = '<tr><td colspan="6" class="tbl-empty">Sin resultados.</td></tr>'; return; }
-      tbody.innerHTML = list.map(p => { const s = p.stock || 0, pct = Math.min(100, Math.round((s / 15) * 100)), cls = s === 0 ? 'empty' : s <= 3 ? 'low' : '', badge = s === 0 ? '<span class="badge red">Agotado</span>' : s <= 3 ? '<span class="badge yellow">Stock bajo</span>' : '<span class="badge green">En stock</span>'; const media = p.images?.[0] ? `style="background-image:url('${p.images[0]}')"` : ''; return `<tr><td><div class="tbl-prod"><div class="inventory-thumb" ${media}>${p.images?.[0] ? '' : `<div style="display:flex;align-items:center;justify-content:center;width:100%;height:100%;opacity:.5">${PERFUME_SVG}</div>`}</div><div><div class="tbl-prod-name">${escapeHtml(p.name)}</div><div class="tbl-prod-sub">${escapeHtml(p.size || '35 ml · EDP')}</div></div></div></td><td>${escapeHtml(getCategoryName(p.cat))} / ${escapeHtml(getSubcategoryName(p.cat2))}</td><td><div class="stock-control"><div class="stock-arrows"><button class="stock-step up" type="button" onclick="Dash.adjustProductStock('${p.id}',1)" title="Aumentar stock" aria-label="Aumentar stock de ${escapeHtml(p.name)}">↑</button><button class="stock-step down" type="button" onclick="Dash.adjustProductStock('${p.id}',-1)" title="Disminuir stock" aria-label="Disminuir stock de ${escapeHtml(p.name)}">↓</button></div><div class="stock-meter"><span class="stock-number">${s}</span><span class="stock-bar"><span class="stock-bar-fill ${cls}" style="width:${pct}%"></span></span></div></div></td><td>$${p.price.toLocaleString('es-AR')}</td><td>${badge}</td><td><button class="tbl-action" onclick="Dash.editProduct('${p.id}')">Editar</button><button class="tbl-action del" onclick="Dash.deleteProduct('${p.id}')">Eliminar</button></td></tr>` }).join('');
+      tbody.innerHTML = list.map(p => { const s = Number(p.stock || 0), pct = Math.min(100, Math.round((s / 15) * 100)), cls = s === 0 ? 'empty' : s <= 3 ? 'low' : '', badge = s === 0 ? '<span class="badge red">Agotado</span>' : s <= 3 ? '<span class="badge yellow">Stock bajo</span>' : '<span class="badge green">En stock</span>'; const img = safeCssUrl(p.images?.[0]); const media = img ? `style="background-image:url('${img}')"` : ''; return `<tr><td><div class="tbl-prod"><div class="inventory-thumb" ${media}>${img ? '' : `<div style="display:flex;align-items:center;justify-content:center;width:100%;height:100%;opacity:.5">${PERFUME_SVG}</div>`}</div><div><div class="tbl-prod-name">${escapeHtml(p.name)}</div><div class="tbl-prod-sub">${escapeHtml(p.size || '35 ml · EDP')}</div></div></div></td><td>${escapeHtml(getCategoryName(p.cat))} / ${escapeHtml(getSubcategoryName(p.cat2))}</td><td><div class="stock-control"><div class="stock-arrows"><button class="stock-step up" type="button" onclick="Dash.adjustProductStock('${escapeJsAttr(p.id)}',1)" title="Aumentar stock" aria-label="Aumentar stock de ${escapeHtml(p.name)}">↑</button><button class="stock-step down" type="button" onclick="Dash.adjustProductStock('${escapeJsAttr(p.id)}',-1)" title="Disminuir stock" aria-label="Disminuir stock de ${escapeHtml(p.name)}">↓</button></div><div class="stock-meter"><span class="stock-number">${s}</span><span class="stock-bar"><span class="stock-bar-fill ${cls}" style="width:${pct}%"></span></span></div></div></td><td>$${Number(p.price || 0).toLocaleString('es-AR')}</td><td>${badge}</td><td><button class="tbl-action" onclick="Dash.editProduct('${escapeJsAttr(p.id)}')">Editar</button><button class="tbl-action del" onclick="Dash.deleteProduct('${escapeJsAttr(p.id)}')">Eliminar</button></td></tr>` }).join('');
     };
     Dash.renderInventoryFilters = function(){
       const row = document.getElementById('inv-filter-row'); if (!row) return;
@@ -14489,7 +14585,7 @@ body.modal-open .aura-dock-outer {
         const data = buildCheckoutWhatsAppMessage();
         registerCheckoutOrder(data);
         const waNum = STORE?.waNum || config?.waNum || '5492942444236';
-        window.open(`https://wa.me/${waNum}?text=${encodeURIComponent(data.message)}`, '_blank');
+        window.open(`https://wa.me/${waNum}?text=${encodeURIComponent(data.message)}`, '_blank', 'noopener,noreferrer');
         if (typeof Cart !== 'undefined' && typeof Cart.remove === 'function') {
           getCheckoutItems().slice().forEach(item => Cart.remove(item.id));
         }
@@ -16720,3 +16816,6 @@ body {
 </script></body>
 
 </html>
+
+
+
