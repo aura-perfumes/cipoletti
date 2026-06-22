@@ -8785,6 +8785,10 @@ renderConfigWAPreview();
       });
     }
 
+    function safeGetLocalImages() {
+      try { return JSON.parse(localStorage.getItem('aura_product_images') || '{}'); }
+      catch (e) { return {}; }
+    }
     function isDefaultProductsList(list) {
       return Array.isArray(list)
         && Array.isArray(DEFAULT_PRODUCTS)
@@ -8926,10 +8930,6 @@ renderConfigWAPreview();
       setSyncStatus('init', rtdb ? `Realtime Database activo (${SYNC_BUILD})` : 'Realtime Database SDK no disponible', !!localStorage.getItem('aura_sync_debug'));
 
       function safeClone(v) { return JSON.parse(JSON.stringify(v)); }
-      function safeGetLocalImages() {
-        try { return JSON.parse(localStorage.getItem('aura_product_images') || '{}'); }
-        catch (e) { return {}; }
-      }
       function isDataImage(value) { return typeof value === 'string' && value.startsWith('data:image/'); }
       function safeAssetName(value) { return String(value || 'asset').replace(/[^a-z0-9_-]+/gi, '-').slice(0, 60) || 'asset'; }
       async function uploadSyncAsset(dataUrl, name) {
@@ -16820,6 +16820,3 @@ body {
 </script></body>
 
 </html>
-
-
-
