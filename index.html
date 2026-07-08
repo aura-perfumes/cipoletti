@@ -1281,6 +1281,62 @@ const ExternalScripts = (() => {
       width: 100%
     }
 
+    .store-update-notice {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: .9rem;
+      margin: 0 0 1.2rem;
+      padding: .85rem 1rem;
+      border: 1px solid rgba(201, 168, 76, .28);
+      border-radius: 14px;
+      background: linear-gradient(135deg, rgba(12, 15, 26, .96), rgba(19, 27, 77, .92));
+      color: rgba(255, 255, 255, .88);
+      box-shadow: 0 14px 34px rgba(12, 15, 26, .16);
+      font-size: .78rem;
+      line-height: 1.45;
+    }
+
+    .store-update-notice strong {
+      color: var(--gold);
+      font-weight: 800;
+    }
+
+    .store-update-notice button {
+      width: 30px;
+      height: 30px;
+      border: 1px solid rgba(201, 168, 76, .28);
+      border-radius: 50%;
+      background: rgba(255, 255, 255, .06);
+      color: rgba(255, 255, 255, .75);
+      flex: 0 0 auto;
+      font-weight: 700;
+      line-height: 1;
+    }
+
+    .store-update-notice button:hover {
+      background: rgba(201, 168, 76, .18);
+      color: #fff;
+    }
+
+    .cart-promo-limit-notice,
+    .aura-promo-limit-notice {
+      border: 1px solid rgba(245, 158, 11, .45);
+      border-radius: 12px;
+      background: rgba(245, 158, 11, .12);
+      color: #f8d58a;
+      padding: .75rem .85rem;
+      font-size: .76rem;
+      line-height: 1.45;
+      margin-bottom: .65rem;
+    }
+
+    .aura-promo-limit-notice {
+      color: #92400e;
+      background: #fff8ec;
+      border-color: #f59e0b;
+    }
+
     .filter-bar {
       display: flex;
       align-items: center;
@@ -9882,9 +9938,6 @@ body {
           <span class="nav-icon">🛍</span>Pedidos
           <span class="nav-badge"></span>
         </button>
-        <button class="dash-nav-item" id="dash-nav-ventas" onclick="App.dashNav(this,'ventas')">
-          <span class="nav-icon">🧾</span>Ventas
-        </button>
         <button class="dash-nav-item" onclick="App.dashNav(this,'clientes')">
           <span class="nav-icon">👤</span>Clientes
         </button>
@@ -10035,97 +10088,6 @@ body {
                 </tr>
               </thead>
               <tbody id="ped-tbody"></tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-
-      <!-- ── VENTAS ─────────────────────────────── -->
-      <div id="sec-ventas" style="display:none">
-        <div class="dash-topbar">
-          <div>
-            <button class="dash-back" onclick="App.show('s-portal')">← Volver al portal</button>
-            <h1 class="dash-page-title display">Ventas</h1>
-            <p class="dash-page-sub">Historial completo de ventas registradas y asociadas a clientes. Vista comercial independiente calculada desde ORDERS.</p>
-          </div>
-        </div>
-        <div class="kpi-grid ventas-kpi-grid">
-          <div class="kpi-card">
-            <div class="kpi-label">Total facturado</div>
-            <div class="kpi-value display" id="ventas-kpi-total">$0</div>
-            <div class="kpi-sub" id="ventas-kpi-total-sub">Desde ORDERS</div>
-          </div>
-          <div class="kpi-card">
-            <div class="kpi-label">Ventas registradas</div>
-            <div class="kpi-value display" id="ventas-kpi-count">0</div>
-            <div class="kpi-sub">Órdenes guardadas</div>
-          </div>
-          <div class="kpi-card dark">
-            <div class="kpi-label">Unidades vendidas</div>
-            <div class="kpi-value display" id="ventas-kpi-units">0</div>
-            <div class="kpi-sub">Suma de cantidades</div>
-          </div>
-          <div class="kpi-card">
-            <div class="kpi-label">Clientes con compras</div>
-            <div class="kpi-value display" id="ventas-kpi-clients">0</div>
-            <div class="kpi-sub">Clientes únicos</div>
-          </div>
-        </div>
-        <div class="section-card ventas-table-card">
-          <div class="section-card-hdr">
-            <span class="section-card-title display">Historial comercial</span>
-          </div>
-          <div class="ventas-filters">
-            <div class="sc-search"><span class="sc-search-icon">🔍</span><input type="text" placeholder="Buscar por cliente, producto, ciudad, ID, canal o estado..." id="ventas-search" oninput="Dash.renderVentasTable();Dash.renderVentasClientesSummary();" /></div>
-            <select id="ventas-canal" class="ventas-filter-select" onchange="Dash.renderVentasTable();Dash.renderVentasClientesSummary();">
-              <option value="todos">Todos los canales</option>
-              <option value="manual">Venta manual</option>
-              <option value="web">Pedido web</option>
-            </select>
-            <select id="ventas-fecha" class="ventas-filter-select" onchange="Dash.renderVentasTable();Dash.renderVentasClientesSummary();">
-              <option value="todas">Todas las fechas</option>
-              <option value="hoy">Hoy</option>
-              <option value="7">Últimos 7 días</option>
-              <option value="30">Últimos 30 días</option>
-            </select>
-          </div>
-          <div class="table-wrap">
-            <table class="data-table">
-              <thead>
-                <tr>
-                  <th>Fecha</th>
-                  <th>ID venta</th>
-                  <th>Cliente</th>
-                  <th>Contacto</th>
-                  <th>Productos</th>
-                  <th>Unidades</th>
-                  <th>Total</th>
-                  <th>Canal</th>
-                  <th>Estado</th>
-                  <th>Acciones</th>
-                </tr>
-              </thead>
-              <tbody id="ventas-tbody"></tbody>
-            </table>
-          </div>
-        </div>
-        <div class="section-card ventas-summary-card">
-          <div class="section-card-hdr">
-            <span class="section-card-title display">Resumen por cliente</span>
-          </div>
-          <div class="table-wrap">
-            <table class="data-table">
-              <thead>
-                <tr>
-                  <th>Cliente</th>
-                  <th>Contacto</th>
-                  <th>Compras</th>
-                  <th>Total gastado</th>
-                  <th>Última compra</th>
-                  <th>Productos recientes</th>
-                </tr>
-              </thead>
-              <tbody id="ventas-clientes-tbody"></tbody>
             </table>
           </div>
         </div>
@@ -10758,6 +10720,10 @@ body {
     </nav>
     <!-- Body -->
     <div class="store-body">
+      <div class="store-update-notice" id="store-update-notice" role="status" aria-live="polite">
+        <span><strong>Actualización:</strong> Si ya visitaste la tienda antes, actualizá la página para ver los precios y stock más recientes.</span>
+        <button type="button" aria-label="Cerrar aviso" onclick="AuraUpdateNotice.dismiss()">×</button>
+      </div>
       <div class="filter-bar">
         <div class="filter-chips category-bar" id="filter-chips" aria-label="Categorias de productos"></div>
         <div class="search-wrap">
@@ -11034,10 +11000,10 @@ body {
           { qty: 7, unitPrice: 7000, total: 49000, label: '7x $49.000 ($7.000 c/u)' },
           { qty: 8, unitPrice: 7000, total: 56000, label: '8x $56.000 ($7.000 c/u)' },
           { qty: 9, unitPrice: 7000, total: 63000, label: '9x $63.000 ($7.000 c/u)' },
-          { qty: 10, unitPrice: 3000, total: 30000, label: 'Desde 10 unidades: $3.000 c/u' },
+          { qty: 10, unitPrice: 3000, total: 30000, label: 'Desde 10 hasta 100 unidades: $3.000 c/u' },
         ],
         fragrances: ['Khamrah', 'Erba Pura', 'Yara', 'Yara Moi', '9pm', 'Asad', 'Odyssey Tyrant', 'Rose Velours', 'Musc Blanc', 'Cedar Smoke', 'Odyssey Candeo', 'Absolu Noir', 'Odyssey Spectra', 'Odyssey Limoni'],
-        note: 'Desde 4 hasta 9 unidades: $7.000 c/u. Desde 10 unidades: $3.000 c/u.',
+        note: 'Desde 4 hasta 9 unidades: $7.000 c/u. Desde 10 hasta 100 unidades: $3.000 c/u. Consultar para pedidos mayores a 100 unidades.',
       },
       {
         id: 'promo-bodysplash-100',
@@ -11075,11 +11041,24 @@ body {
       return PROMOS_DATA.filter(p => p.active !== false);
     }
 
+    const TUBITOS_PROMO_ID = 'promo-tubitos-arabes';
+    const TUBITOS_PROMO_MAX_QTY = 100;
+    const TUBITOS_PROMO_LIMIT_MESSAGE = 'Para pedidos mayores a 100 unidades, por favor contactanos directamente para coordinar precio mayorista.';
+
+    function getPromoLimitMessage(promo, qty) {
+      qty = Number(qty || 0);
+      if (promo?.id === TUBITOS_PROMO_ID && qty > TUBITOS_PROMO_MAX_QTY) {
+        return TUBITOS_PROMO_LIMIT_MESSAGE;
+      }
+      return '';
+    }
+
     function getPromoTier(promo, qty) {
       qty = Number(qty || 0);
       if (!promo || !qty) return null;
-      if (promo.id === 'promo-tubitos-arabes') {
-        if (qty >= 10) {
+      if (promo.id === TUBITOS_PROMO_ID) {
+        if (qty > TUBITOS_PROMO_MAX_QTY) return null;
+        if (qty >= 10 && qty <= TUBITOS_PROMO_MAX_QTY) {
           return { qty, unitPrice: 3000, total: qty * 3000, label: `${qty}x $${(qty * 3000).toLocaleString('es-AR')} ($3.000 c/u)` };
         }
         if (qty >= 4 && qty <= 9) {
@@ -11243,10 +11222,47 @@ body {
         clearTimeout(badgePulseTimer);
         badgePulseTimer = setTimeout(() => badge.classList.remove('pulse'), 500);
       }
+      function getTubitosPromo() {
+        return (typeof getActivePromos === 'function' ? getActivePromos() : []).find(promo => promo.id === 'promo-tubitos-arabes') || null;
+      }
+      function itemBelongsToTubitosPromo(item) {
+        if (!item || item._isPromo) return false;
+        const product = Array.isArray(PRODUCTS) ? PRODUCTS.find(p => p.id === item.id) : null;
+        return !!(product && getAssignedPromoIds(product).includes('promo-tubitos-arabes'));
+      }
+      function getTubitosPromoQty(nextItemId, nextQty) {
+        let replaced = false;
+        const total = items.reduce((sum, item) => {
+          if (!itemBelongsToTubitosPromo(item)) return sum;
+          if (nextItemId && item.id === nextItemId) {
+            replaced = true;
+            return sum + Math.max(0, Number(nextQty || 0));
+          }
+          return sum + Number(item.qty || 0);
+        }, 0);
+        if (nextItemId && !replaced) {
+          const product = Array.isArray(PRODUCTS) ? PRODUCTS.find(p => p.id === nextItemId) : null;
+          if (product && getAssignedPromoIds(product).includes('promo-tubitos-arabes')) {
+            return total + Math.max(0, Number(nextQty || 0));
+          }
+        }
+        return total;
+      }
+      function getTubitosPromoLimitNotice(qty) {
+        const promo = getTubitosPromo();
+        return typeof getPromoLimitMessage === 'function' ? getPromoLimitMessage(promo, qty) : '';
+      }
+      function blocksTubitosPromoLimit(itemId, nextQty) {
+        const qty = getTubitosPromoQty(itemId, nextQty);
+        const message = getTubitosPromoLimitNotice(qty);
+        if (!message) return false;
+        if (typeof showToast === 'function') showToast(message, true);
+        return true;
+      }
       function refreshTotals() {
         const hasItems = items.length > 0;
         const modes = getShippingModes();
-        const { totalDiscount, discountLines } = getAppliedDiscounts();
+        const { totalDiscount, discountLines, limitWarnings = [] } = getAppliedDiscounts();
         const subtotalValue = subtotal();
         const totalValue = subtotalValue + deliveryCost - totalDiscount;
         const totalsBox = document.getElementById('cart-totals');
@@ -11295,8 +11311,10 @@ body {
            <span class="cart-subtotal-discount">$${(subtotalValue - totalDiscount).toLocaleString('es-AR')}</span>`
             : `$${subtotalValue.toLocaleString('es-AR')}`;
 
+          const limitWarningsHTML = limitWarnings.map(message => `<div class="cart-promo-limit-notice">${escapeHtml(message)}</div>`).join('');
           totalsBox.innerHTML = `
         ${promoProgressHTML}
+        ${limitWarningsHTML}
         <div class="cart-row"><span>Subtotal</span><span>${subtotalHTML}</span></div>
         ${discountLines.map(({ promo, discount }) => 
           `<div class="cart-discount-row">
@@ -11379,8 +11397,8 @@ body {
         document.body.style.overflow = '';
         closeSuggestions()
       }
-      function addItem(p) { const ex = items.find(i => i.id === p.id); if (ex) ex.qty = Math.min(ex.qty + 1, 99); else items.push({ id: p.id, name: p.name, price: p.price, emoji: p.emoji, images: p.images || [], size: p.size || '35 ml · EDP', qty: 1, _isPromo: !!p._isPromo, _promoId: p._promoId || null, _promoQty: p._promoQty || null, _promoFragrances: p._promoFragrances || null }); save(); render(); updateCartBadge(true); showAddToast(p.name); trackZone('addToCart'); setTimeout(() => checkPromoEligibilityForProduct(p), 300) }
-      function updateQty(id, d) { const it = items.find(i => i.id === id); if (!it) return; it.qty += d; if (it.qty <= 0) items = items.filter(i => i.id !== id); save(); render(); updateCartBadge(true); setTimeout(() => { if (typeof checkPromoEligibility === 'function') checkPromoEligibility(); }, 50); }
+      function addItem(p) { const ex = items.find(i => i.id === p.id); const nextQty = ex ? Math.min(ex.qty + 1, 99) : 1; if (!p?._isPromo && blocksTubitosPromoLimit(p.id, nextQty)) return false; if (ex) ex.qty = nextQty; else items.push({ id: p.id, name: p.name, price: p.price, emoji: p.emoji, images: p.images || [], size: p.size || '35 ml · EDP', qty: 1, _isPromo: !!p._isPromo, _promoId: p._promoId || null, _promoQty: p._promoQty || null, _promoFragrances: p._promoFragrances || null }); save(); render(); updateCartBadge(true); showAddToast(p.name); trackZone('addToCart'); setTimeout(() => checkPromoEligibilityForProduct(p), 300); return true }
+      function updateQty(id, d) { const it = items.find(i => i.id === id); if (!it) return false; const nextQty = Number(it.qty || 0) + Number(d || 0); if (d > 0 && !it._isPromo && blocksTubitosPromoLimit(id, nextQty)) return false; it.qty = nextQty; if (it.qty <= 0) items = items.filter(i => i.id !== id); save(); render(); updateCartBadge(true); setTimeout(() => { if (typeof checkPromoEligibility === 'function') checkPromoEligibility(); }, 50); return true }
       function remove(id) { items = items.filter(i => i.id !== id); save(); render(); updateCartBadge(true); setTimeout(() => { if (typeof checkPromoEligibility === 'function') checkPromoEligibility(); }, 50); }
       function render() {
         updateCartBadge(false);
@@ -11475,8 +11493,9 @@ body {
       const items = Array.isArray(cartItems) ? cartItems : [];
       let totalDiscount = 0;
       const discountLines = [];
+      const limitWarnings = [];
       if (!items.length || typeof getActivePromos !== 'function') {
-        return { totalDiscount, discountLines };
+        return { totalDiscount, discountLines, limitWarnings };
       }
       for (const promo of getActivePromos()) {
         const promoItems = items.filter(item => {
@@ -11486,6 +11505,11 @@ body {
         });
         const totalQtyForPromo = promoItems.reduce((sum, item) => sum + Number(item.qty || 0), 0);
         if (totalQtyForPromo === 0) continue;
+        const limitMessage = typeof getPromoLimitMessage === 'function' ? getPromoLimitMessage(promo, totalQtyForPromo) : '';
+        if (limitMessage) {
+          if (!limitWarnings.includes(limitMessage)) limitWarnings.push(limitMessage);
+          continue;
+        }
         const discount = typeof getPromoDiscount === 'function'
           ? getPromoDiscount(promo, totalQtyForPromo)
           : null;
@@ -11494,7 +11518,7 @@ body {
           discountLines.push({ promo, discount, qtyMatched: totalQtyForPromo });
         }
       }
-      return { totalDiscount, discountLines };
+      return { totalDiscount, discountLines, limitWarnings };
     }
 
     function getCartActiveDiscount(cartItems) {
@@ -12252,12 +12276,12 @@ renderConfigWAPreview();
     };
 
     const App = {
-      show(id) { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); const el = document.getElementById(id); if (el) el.classList.add('active'); if (id === 's-dashboard') { setTimeout(() => { initChart(); Dash.renderInventory(); Dash.renderPedidos(); Dash.renderClientes(); Dash.renderVentas?.(); Dash.updatePanelKPIs(); Dash.renderTaxonomy(); PromoAdmin.render() }, 80) } if (id === 's-store') { renderProducts(); applyStoreConfig() } window.scrollTo(0, 0) },
+      show(id) { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); const el = document.getElementById(id); if (el) el.classList.add('active'); if (id === 's-dashboard') { setTimeout(() => { initChart(); Dash.renderInventory(); Dash.renderPedidos(); Dash.renderClientes(); Dash.updatePanelKPIs(); Dash.renderTaxonomy(); PromoAdmin.render() }, 80) } if (id === 's-store') { renderProducts(); applyStoreConfig() } window.scrollTo(0, 0) },
       goStaff() { this.show('s-staff-gate'); document.getElementById('staff-pwd').focus() },
       goStore() { this.show('s-store'); setTimeout(() => { const st = document.getElementById('s-store'); if (st) st.scrollTo({ top: 0, behavior: 'instant' }) }, 30) },
       async staffLogin() { const pwd = document.getElementById('staff-pwd').value.trim(); try { if (crypto?.subtle && await sha256Hex(pwd) === ADMIN_PASSWORD_SHA256) { this.show('s-dashboard') } else { markStaffLoginError() } } catch (e) { markStaffLoginError() } },
       togglePwd() { const inp = document.getElementById('staff-pwd'); inp.type = inp.type === 'password' ? 'text' : 'password' },
-      dashNav(btn, section) { document.querySelectorAll('.dash-nav-item').forEach(b => b.classList.remove('active')); if (btn) btn.classList.add('active');['panel', 'inventario', 'pedidos', 'ventas', 'clientes', 'analiticas', 'config'].forEach(s => { const el = document.getElementById('sec-' + s); if (el) el.style.display = s === section ? '' : 'none' }); if (section === 'inventario') Dash.renderInventory(); else if (section === 'pedidos') Dash.renderPedidos(); else if (section === 'ventas') Dash.renderVentas?.(); else if (section === 'clientes') Dash.renderClientes(); else if (section === 'analiticas') setTimeout(() => Dash.initAnalytics(), 80); else if (section === 'config') setTimeout(() => { Dash.renderTaxonomy(); PromoAdmin.render(); Dash.initConfigTabs(); }, 50) },
+      dashNav(btn, section) { document.querySelectorAll('.dash-nav-item').forEach(b => b.classList.remove('active')); if (btn) btn.classList.add('active');['panel', 'inventario', 'pedidos', 'clientes', 'analiticas', 'config'].forEach(s => { const el = document.getElementById('sec-' + s); if (el) el.style.display = s === section ? '' : 'none' }); if (section === 'inventario') Dash.renderInventory(); else if (section === 'pedidos') Dash.renderPedidos(); else if (section === 'clientes') Dash.renderClientes(); else if (section === 'analiticas') setTimeout(() => Dash.initAnalytics(), 80); else if (section === 'config') setTimeout(() => { Dash.renderTaxonomy(); PromoAdmin.render(); Dash.initConfigTabs(); }, 50) },
       chartPeriod(p, btn) { document.querySelectorAll('.chart-tab').forEach(b => b.classList.remove('active')); btn.classList.add('active'); initChart(p) },
       filter(btn) { document.querySelectorAll('.chip').forEach(c => c.classList.remove('active')); btn.classList.add('active'); currentFilter = btn.dataset.cat; trackZone('filters'); renderProducts() },
       search(q) { currentSearch = q; renderProducts() },
@@ -12365,6 +12389,59 @@ renderConfigWAPreview();
     const firestore = firebase.firestore ? firebase.firestore() : null;
     const storage = firebase.storage ? firebase.storage() : null;
     console.log(rtdb ? 'Firebase Realtime Database conectado' : 'Firebase conectado sin Realtime Database');
+
+    const APP_VERSION = '2026-07-08-2100';
+    const APP_VERSION_REMOTE_PATH = 'config/appVersion';
+    const APP_VERSION_LS_KEY = 'aura_app_version';
+
+    function normalizeAppVersionValue(value) {
+      if (value && typeof value === 'object') {
+        if (typeof value.version !== 'undefined') return String(value.version || '').trim();
+        if (typeof value.value !== 'undefined') return String(value.value || '').trim();
+      }
+      return String(value || '').trim();
+    }
+
+    function handleRemoteAppVersion(value) {
+      const remoteVersion = normalizeAppVersionValue(value);
+      if (!remoteVersion) {
+        localStorage.setItem(APP_VERSION_LS_KEY, APP_VERSION);
+        return;
+      }
+
+      if (remoteVersion === APP_VERSION) {
+        localStorage.setItem(APP_VERSION_LS_KEY, remoteVersion);
+        return;
+      }
+
+      const reloadKey = 'aura_app_version_reload_' + remoteVersion.replace(/[^a-z0-9_-]/gi, '_');
+      localStorage.setItem(APP_VERSION_LS_KEY, remoteVersion);
+      if (sessionStorage.getItem(reloadKey) === '1') return;
+      sessionStorage.setItem(reloadKey, '1');
+      setTimeout(() => {
+        try { window.location.reload(true); }
+        catch (error) { window.location.reload(); }
+      }, 250);
+    }
+
+    async function initAppVersionWatcher() {
+      try {
+        if (typeof ensureFirebaseAuth === 'function') await ensureFirebaseAuth();
+        if (rtdb) {
+          rtdb.ref(APP_VERSION_REMOTE_PATH).on('value', snap => handleRemoteAppVersion(snap.val()), error => console.log('APP VERSION WATCH ERROR ->', error.message));
+          return;
+        }
+        if (firestore) {
+          firestore.collection('config').doc('appVersion').onSnapshot(doc => handleRemoteAppVersion(doc.exists ? doc.data() : null), error => console.log('APP VERSION WATCH ERROR ->', error.message));
+          return;
+        }
+        localStorage.setItem(APP_VERSION_LS_KEY, APP_VERSION);
+      } catch (error) {
+        console.log('APP VERSION WATCH ERROR ->', error.message);
+      }
+    }
+
+    setTimeout(initAppVersionWatcher, 0);
 
     const LS = {
       get: k => {
@@ -13023,6 +13100,26 @@ window.AuraDock = (() => {
   return { setActive, goHome, goCollection, goSugerencias, goFavorites, goNosotros, goCart };
 })();
 </script>
+<script>
+  const AuraUpdateNotice = (() => {
+    const KEY = 'aura_update_notice_closed_session';
+    function dismiss() {
+      try { sessionStorage.setItem(KEY, '1'); } catch (error) {}
+      const notice = document.getElementById('store-update-notice');
+      if (notice) notice.style.display = 'none';
+    }
+    function init() {
+      const notice = document.getElementById('store-update-notice');
+      if (!notice) return;
+      let closed = false;
+      try { closed = sessionStorage.getItem(KEY) === '1'; } catch (error) {}
+      notice.style.display = closed ? 'none' : '';
+    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init, { once: true });
+    else init();
+    return { dismiss, init };
+  })();
+</script>
 <!-- ══ PROMO COMBO MODAL ═══════════════════════════ -->
   <div class="promo-overlay" id="promo-modal" onclick="if(event.target===this)PromoModal.close()">
     <div class="promo-modal">
@@ -13128,6 +13225,11 @@ const PromoModal = (() => {
     const promo = currentPromo;
     const tier = selectedTier;
     if (!promo || !tier) return;
+    const limitMessage = typeof getPromoLimitMessage === 'function' ? getPromoLimitMessage(promo, tier.qty) : '';
+    if (limitMessage) {
+      if (typeof showToast === 'function') showToast(limitMessage, true);
+      return;
+    }
     const frags = selectedFragrances.slice(0, tier.qty);
     Cart.addItem({
       id: `${promo.id}-${Date.now()}`,
@@ -14430,8 +14532,9 @@ const SugCenter = (() => {
         const items = Array.isArray(cartItems) ? cartItems : [];
         let totalDiscount = 0;
         const discountLines = [];
+        const limitWarnings = [];
         if (!items.length || typeof getActivePromos !== 'function') {
-          return { totalDiscount, discountLines };
+          return { totalDiscount, discountLines, limitWarnings };
         }
         for (const promo of getActivePromos()) {
           const promoItems = items.filter(item => {
@@ -14441,6 +14544,11 @@ const SugCenter = (() => {
           });
           const totalQtyForPromo = promoItems.reduce((sum, item) => sum + Number(item.qty || 0), 0);
           if (totalQtyForPromo === 0) continue;
+          const limitMessage = typeof getPromoLimitMessage === 'function' ? getPromoLimitMessage(promo, totalQtyForPromo) : '';
+          if (limitMessage) {
+            if (!limitWarnings.includes(limitMessage)) limitWarnings.push(limitMessage);
+            continue;
+          }
           const discount = typeof getPromoDiscount === 'function'
             ? getPromoDiscount(promo, totalQtyForPromo)
             : null;
@@ -14449,7 +14557,7 @@ const SugCenter = (() => {
             discountLines.push({ promo, discount, qtyMatched: totalQtyForPromo });
           }
         }
-        return { totalDiscount, discountLines };
+        return { totalDiscount, discountLines, limitWarnings };
       };
 
       window.getCartActiveDiscount = function(cartItems){
@@ -15013,6 +15121,7 @@ const SugCenter = (() => {
           subtotal,
           promoDiscount,
           promoLines: promo.discountLines || [],
+          limitWarnings: promo.limitWarnings || [],
           couponDiscount,
           shipping,
           shippingLabel,
@@ -15113,8 +15222,10 @@ const SugCenter = (() => {
       function renderCheckoutSummary() {
         const totals = getCheckoutTotals();
         const caret = `<svg class="aura-summary-caret ${checkoutState.detailsOpen ? 'open' : ''}" viewBox="0 0 20 20" aria-hidden="true"><path d="M5 8l5 5 5-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+        const limitWarningsHTML = (totals.limitWarnings || []).map(message => `<div class="aura-promo-limit-notice">${auraEscape(message)}</div>`).join('');
         const itemsHTML = checkoutState.detailsOpen ? `
           <div class="aura-summary-body">
+            ${limitWarningsHTML}
             ${totals.items.map(item => {
               const img = firstImage(item);
               return `<div class="aura-summary-item">
@@ -15161,6 +15272,7 @@ const SugCenter = (() => {
         return `<div class="aura-checkout-card">
           <div class="aura-checkout-card-title">Tu carrito</div>
           <div class="aura-checkout-card-sub">Revisa productos y cantidades antes de completar los datos de entrega.</div>
+          ${(totals.limitWarnings || []).map(message => `<div class="aura-promo-limit-notice">${auraEscape(message)}</div>`).join('')}
           ${totals.items.map(item => `<div class="aura-summary-item" style="margin-bottom:.6rem">
             <div class="aura-summary-thumb">${firstImage(item) ? `<img src="${auraEscape(firstImage(item))}" alt="${auraEscape(item.name)}" loading="lazy" decoding="async">` : auraEscape(item.emoji || 'A')}</div>
             <div>
@@ -17899,9 +18011,9 @@ const SugCenter = (() => {
         { qty: 7, unitPrice: 7000, total: 49000, label: '7x $49.000 ($7.000 c/u)' },
         { qty: 8, unitPrice: 7000, total: 56000, label: '8x $56.000 ($7.000 c/u)' },
         { qty: 9, unitPrice: 7000, total: 63000, label: '9x $63.000 ($7.000 c/u)' },
-        { qty: 10, unitPrice: 3000, total: 30000, label: 'Desde 10 unidades: $3.000 c/u' }
+        { qty: 10, unitPrice: 3000, total: 30000, label: 'Desde 10 hasta 100 unidades: $3.000 c/u' }
       ];
-      promo.note = 'Desde 4 hasta 9 unidades: $7.000 c/u. Desde 10 unidades: $3.000 c/u.';
+      promo.note = 'Desde 4 hasta 9 unidades: $7.000 c/u. Desde 10 hasta 100 unidades: $3.000 c/u. Consultar para pedidos mayores a 100 unidades.';
       if (typeof LS !== 'undefined' && LS?.set) LS.set('promos', PROMOS_DATA);
       else writeJSON('aura_promos', PROMOS_DATA);
     } catch (error) {
@@ -17914,7 +18026,8 @@ const SugCenter = (() => {
       qty = Number(qty || 0);
       if (!promo || !qty) return null;
       if (promo.id === 'promo-tubitos-arabes') {
-        if (qty >= 10) return { qty, unitPrice: 3000, total: qty * 3000, label: `${qty}x ${money(qty * 3000)} ($3.000 c/u)` };
+        if (qty > 100) return null;
+        if (qty >= 10 && qty <= 100) return { qty, unitPrice: 3000, total: qty * 3000, label: `${qty}x ${money(qty * 3000)} ($3.000 c/u)` };
         if (qty >= 4 && qty <= 9) return { qty, unitPrice: 7000, total: qty * 7000, label: `${qty}x ${money(qty * 7000)} ($7.000 c/u)` };
       }
       const exact = (promo.tiers || []).find(t => Number(t.qty) === qty);
@@ -19237,7 +19350,7 @@ const SugCenter = (() => {
           <div>
             <button class="dash-back" onclick="App.show('s-portal')">← Volver al portal</button>
             <h1 class="dash-page-title display">Ventas</h1>
-            <p class="dash-page-sub">Historial completo de ventas registradas y asociadas a clientes. Vista comercial independiente calculada desde ORDERS.</p>
+            <p class="dash-page-sub">Historial completo de ventas registradas y asociadas a clientes.</p>
           </div>
         </div>
         <div class="kpi-grid ventas-kpi-grid">
