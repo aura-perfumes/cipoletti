@@ -10940,12 +10940,10 @@ body {
           { qty: 7, unitPrice: 7000, total: 49000, label: '7x $49.000 ($7.000 c/u)' },
           { qty: 8, unitPrice: 7000, total: 56000, label: '8x $56.000 ($7.000 c/u)' },
           { qty: 9, unitPrice: 7000, total: 63000, label: '9x $63.000 ($7.000 c/u)' },
-          { qty: 10, unitPrice: 4500, total: 45000, label: '10x $45.000 ($4.500 c/u) — MAYORISTA' },
-          { qty: 25, unitPrice: 4000, total: 100000, label: '25x $100.000 ($4.000 c/u) — MAYORISTA' },
-          { qty: 50, unitPrice: 3500, total: 175000, label: '50x $175.000 ($3.500 c/u) — MAYORISTA' },
+          { qty: 10, unitPrice: 3000, total: 30000, label: 'Desde 10 unidades: $3.000 c/u' },
         ],
         fragrances: ['Khamrah', 'Erba Pura', 'Yara', 'Yara Moi', '9pm', 'Asad', 'Odyssey Tyrant', 'Rose Velours', 'Musc Blanc', 'Cedar Smoke', 'Odyssey Candeo', 'Absolu Noir', 'Odyssey Spectra', 'Odyssey Limoni'],
-        note: 'Desde 4 hasta 9 unidades: $7.000 c/u. Precio mayorista desde 10 unidades.',
+        note: 'Desde 4 hasta 9 unidades: $7.000 c/u. Desde 10 unidades: $3.000 c/u.',
       },
       {
         id: 'promo-bodysplash-100',
@@ -10984,12 +10982,18 @@ body {
     }
 
     function getPromoTier(promo, qty) {
+      qty = Number(qty || 0);
       if (!promo || !qty) return null;
-      const exact = promo.tiers.find(t => t.qty === qty);
-      if (exact) return exact;
-      if (promo.id === 'promo-tubitos-arabes' && qty >= 4 && qty <= 9) {
-        return { qty, unitPrice: 7000, total: qty * 7000, label: `${qty}x $${(qty * 7000).toLocaleString('es-AR')} ($7.000 c/u)` };
+      if (promo.id === 'promo-tubitos-arabes') {
+        if (qty >= 10) {
+          return { qty, unitPrice: 3000, total: qty * 3000, label: `${qty}x $${(qty * 3000).toLocaleString('es-AR')} ($3.000 c/u)` };
+        }
+        if (qty >= 4 && qty <= 9) {
+          return { qty, unitPrice: 7000, total: qty * 7000, label: `${qty}x $${(qty * 7000).toLocaleString('es-AR')} ($7.000 c/u)` };
+        }
       }
+      const exact = (promo.tiers || []).find(t => Number(t.qty) === qty);
+      if (exact) return exact;
       return null;
     }
 
@@ -11356,11 +11360,18 @@ body {
       const manual = Array.isArray(product.promoAssignments)
         ? [...new Set(product.promoAssignments)].filter(id => activeIds.has(id))
         : [];
-      const productText = `${product.name || ''} ${product.size || ''}`.toLowerCase();
+      const normalizePromoText = value => String(value || '')
+        .toLowerCase()
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+        .replace(/\s+/g, '')
+        .replace(/[^a-z0-9]/g, '');
+      const productText = normalizePromoText([
+        product.name, product.size, product.cat, product.cat2, product.category, product.subcategory
+      ].filter(Boolean).join(' '));
       const autoMatched = activePromos
         .filter(promo => {
-          if (!promo.sizeMatch || !promo.sizeMatch.trim()) return false;
-          return productText.includes(promo.sizeMatch.trim().toLowerCase());
+          if (!promo.sizeMatch || !String(promo.sizeMatch).trim()) return false;
+          return productText.includes(normalizePromoText(promo.sizeMatch));
         })
         .map(p => p.id);
       return [...new Set([...manual, ...autoMatched])];
@@ -16928,6 +16939,1645 @@ const SugCenter = (() => {
     observer.observe(store, { childList: true, subtree: true });
   }
 })();
-</script></body>
+</script>
+<style id="aura-sales-suggestions-addon-css">
+  .aura-addon-chip {
+    border: 1px solid var(--border);
+    background: #fff;
+    color: var(--text);
+    border-radius: 999px;
+    padding: .45rem .85rem;
+    font-size: .68rem;
+    font-weight: 700;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+  }
+  .aura-sale-modal-overlay,
+  .aura-client-profile-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 5000;
+    background: rgba(4,7,26,.72);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+  }
+  .aura-sale-modal-overlay.active,
+  .aura-client-profile-overlay.active {
+    display: flex;
+  }
+  .aura-sale-modal,
+  .aura-client-profile {
+    width: min(1180px, 96vw);
+    max-height: 92vh;
+    overflow: hidden;
+    border-radius: 18px;
+    background: #fff;
+    border: 1px solid rgba(201,168,76,.26);
+    box-shadow: 0 34px 90px rgba(0,0,0,.42);
+    display: flex;
+    flex-direction: column;
+  }
+  .aura-sale-head,
+  .aura-client-head {
+    background: var(--navy);
+    color: #fff;
+    padding: 1.15rem 1.35rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+  }
+  .aura-sale-title,
+  .aura-client-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.45rem;
+    font-weight: 400;
+  }
+  .aura-sale-sub,
+  .aura-client-sub {
+    color: rgba(255,255,255,.54);
+    font-size: .72rem;
+    margin-top: .15rem;
+  }
+  .aura-sale-close,
+  .aura-client-close {
+    border: 0;
+    width: 34px;
+    height: 34px;
+    border-radius: 999px;
+    background: rgba(255,255,255,.1);
+    color: rgba(255,255,255,.8);
+  }
+  .aura-sale-body {
+    display: grid;
+    grid-template-columns: 1.15fr .85fr;
+    gap: 0;
+    min-height: 0;
+    overflow: hidden;
+  }
+  .aura-sale-left,
+  .aura-sale-right {
+    padding: 1.1rem;
+    overflow: auto;
+    max-height: calc(92vh - 82px);
+  }
+  .aura-sale-left {
+    border-right: 1px solid var(--border);
+    background: #f8fafc;
+  }
+  .aura-sale-right {
+    background: #fff;
+  }
+  .aura-sale-search {
+    width: 100%;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: .75rem .9rem;
+    font-size: .84rem;
+    outline: none;
+    margin-bottom: .9rem;
+  }
+  .aura-sale-products {
+    display: grid;
+    gap: .55rem;
+  }
+  .aura-sale-product {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: .75rem;
+    align-items: center;
+    border: 1px solid var(--border);
+    background: #fff;
+    border-radius: 13px;
+    padding: .78rem;
+  }
+  .aura-sale-product strong,
+  .aura-sale-item strong,
+  .aura-sug-product strong {
+    display: block;
+    color: var(--text);
+    font-size: .86rem;
+  }
+  .aura-sale-meta {
+    color: var(--muted);
+    font-size: .7rem;
+    margin-top: .16rem;
+    line-height: 1.35;
+  }
+  .aura-sale-add {
+    border: 0;
+    background: var(--text);
+    color: #fff;
+    border-radius: 10px;
+    padding: .52rem .78rem;
+    font-size: .68rem;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+  .aura-sale-block {
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    background: #fff;
+  }
+  .aura-sale-block-title {
+    font-family: 'Cormorant Garamond', serif;
+    color: var(--text);
+    font-size: 1.15rem;
+    margin-bottom: .65rem;
+  }
+  .aura-sale-items {
+    display: grid;
+    gap: .65rem;
+  }
+  .aura-sale-item {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: .8rem;
+    align-items: center;
+    border-bottom: 1px solid #edf2f7;
+    padding-bottom: .65rem;
+  }
+  .aura-sale-item:last-child {
+    border-bottom: 0;
+    padding-bottom: 0;
+  }
+  .aura-sale-qty {
+    display: inline-flex;
+    align-items: center;
+    gap: .4rem;
+  }
+  .aura-sale-qty button {
+    width: 28px;
+    height: 28px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: #fff;
+    color: var(--text);
+    font-weight: 800;
+  }
+  .aura-sale-total-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    color: var(--muted);
+    font-size: .8rem;
+    margin: .45rem 0;
+  }
+  .aura-sale-total-row strong {
+    color: var(--text);
+  }
+  .aura-sale-total-row.final {
+    border-top: 1px solid var(--border);
+    margin-top: .65rem;
+    padding-top: .7rem;
+    color: var(--text);
+    font-size: 1rem;
+    font-weight: 800;
+  }
+  .aura-sale-discount {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .aura-sale-form {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: .65rem;
+  }
+  .aura-sale-form .full {
+    grid-column: 1 / -1;
+  }
+  .aura-sale-form input,
+  .aura-sale-form textarea,
+  .aura-sug-admin input,
+  .aura-sug-admin textarea,
+  .aura-sug-admin select,
+  .aura-client-profile textarea {
+    width: 100%;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: .68rem .8rem;
+    font-size: .78rem;
+    outline: none;
+    background: #fff;
+  }
+  .aura-sale-form textarea,
+  .aura-sug-admin textarea,
+  .aura-client-profile textarea {
+    min-height: 82px;
+    resize: vertical;
+  }
+  .aura-sale-final {
+    width: 100%;
+    border: 0;
+    border-radius: 12px;
+    background: var(--gold-grad);
+    color: #1a1200;
+    padding: .9rem 1rem;
+    font-size: .72rem;
+    font-weight: 800;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    margin-top: .8rem;
+  }
+  .aura-sale-final:disabled {
+    opacity: .45;
+    cursor: default;
+  }
+  .aura-sug-list {
+    display: grid;
+    gap: .55rem;
+  }
+  .aura-sug-product {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: .65rem;
+    align-items: center;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: .7rem;
+    background: #fbfdff;
+  }
+  .aura-sug-product button,
+  .aura-sug-admin button,
+  .aura-client-profile button {
+    border: 0;
+    border-radius: 10px;
+    padding: .5rem .7rem;
+    background: var(--text);
+    color: #fff;
+    font-size: .68rem;
+    font-weight: 700;
+  }
+  .aura-sug-admin .btn-light,
+  .aura-client-profile .btn-light {
+    background: #fff;
+    color: var(--text);
+    border: 1px solid var(--border);
+  }
+  .aura-sug-admin-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.2rem;
+  }
+  .aura-sug-group-card {
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: .95rem;
+    background: #fff;
+    margin-bottom: .85rem;
+  }
+  .aura-sug-group-actions {
+    display: flex;
+    gap: .5rem;
+    flex-wrap: wrap;
+    margin-top: .65rem;
+  }
+  .aura-muted-mini {
+    font-size: .7rem;
+    color: var(--muted);
+    line-height: 1.45;
+  }
+  .aura-client-profile {
+    width: min(880px, 96vw);
+  }
+  .aura-client-body {
+    padding: 1.1rem;
+    overflow: auto;
+  }
+  .aura-client-grid {
+    display: grid;
+    grid-template-columns: .9fr 1.1fr;
+    gap: 1rem;
+  }
+  .aura-mini-order {
+    border-bottom: 1px solid var(--border);
+    padding: .55rem 0;
+    font-size: .78rem;
+  }
+  @media(max-width: 860px) {
+    .aura-sale-body,
+    .aura-sug-admin-grid,
+    .aura-client-grid {
+      grid-template-columns: 1fr;
+    }
+    .aura-sale-left,
+    .aura-sale-right {
+      max-height: none;
+      border-right: 0;
+    }
+    .aura-sale-modal,
+    .aura-client-profile {
+      overflow: auto;
+    }
+    .aura-sale-form {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+
+<script id="aura-sales-suggestions-addon-js">
+(function(){
+  'use strict';
+
+  const DEFAULT_SUGGESTION_GROUPS = [
+  {
+    "id": "sg-001",
+    "size": "35ml",
+    "names": [
+      "Xerjoff Erba Pura 35ml",
+      "Amber Oud Gold Edition 35ml",
+      "Xerjoff Coro 35ml"
+    ],
+    "comparable": "",
+    "active": true
+  },
+  {
+    "id": "sg-002",
+    "size": "35ml",
+    "names": [
+      "Fakhar Rose 35ml",
+      "Victoria 35ml",
+      "Her Confession 35ml",
+      "Mayar Natural Intense 250ml"
+    ],
+    "comparable": "",
+    "active": true
+  },
+  {
+    "id": "sg-003",
+    "size": "35ml",
+    "names": [
+      "Club de Nuit Intense Man 35ml",
+      "Qaed al Fursan 35ml",
+      "Hawas Fire 35ml"
+    ],
+    "comparable": "Creed Aventus",
+    "active": true
+  },
+  {
+    "id": "sg-004",
+    "size": "35ml",
+    "names": [
+      "Hawas Ice 35ml",
+      "9am Dive 35ml",
+      "9am 35ml",
+      "Odyssey Limoni 35ml",
+      "Vulcan Black 35ml",
+      "Vulcan Feu 35ml"
+    ],
+    "comparable": "Jean Paul Gaultier Ultra Male",
+    "active": true
+  },
+  {
+    "id": "sg-005",
+    "size": "35ml",
+    "names": [
+      "9pm 35ml",
+      "Odyssey Spectra 35ml"
+    ],
+    "comparable": "",
+    "active": true
+  },
+  {
+    "id": "sg-006",
+    "size": "35ml",
+    "names": [
+      "Club de Nuit Untold 35ml",
+      "Amber Oud Ruby 35ml",
+      "Ameerat al Arab 35ml",
+      "Sakeena 35ml",
+      "Bade'e al Oud Sublime 35ml",
+      "Amber Oud Ultra 35ml"
+    ],
+    "comparable": "",
+    "active": true
+  },
+  {
+    "id": "sg-007",
+    "size": "35ml",
+    "names": [
+      "Eclaire 35ml",
+      "Eclaire Pistache 35ml",
+      "Whipped Pleasure 35ml",
+      "Mallow Madness 35ml",
+      "Vanilla Freak 35ml",
+      "Eclaire Banoffi 35ml",
+      "Berry on Top 35ml"
+    ],
+    "comparable": "Paco Rabanne Invictus / Invictus Aqua",
+    "active": true
+  },
+  {
+    "id": "sg-008",
+    "size": "35ml",
+    "names": [
+      "Fakhar Black 35ml",
+      "Club de Nuit Sillage 35ml",
+      "Odyssey Mega 35ml",
+      "Ameer al Arab 35ml",
+      "Odyssey Spectra Blue 35ml",
+      "Ameer al Arab Imperium 35ml"
+    ],
+    "comparable": "Yves Saint Laurent Y EDP",
+    "active": true
+  },
+  {
+    "id": "sg-009",
+    "size": "35ml",
+    "names": [
+      "Khamrah Qahwa 35ml",
+      "Asad Bourbon 35ml",
+      "Raghba 35ml",
+      "Sehr 35ml",
+      "His Confession 35ml",
+      "Odyssey Homme White 35ml"
+    ],
+    "comparable": "Kilian Angels’ Share",
+    "active": true
+  },
+  {
+    "id": "sg-010",
+    "size": "35ml",
+    "names": [
+      "Odyssey Dubai Chocolat 35ml",
+      "Choco Overdose 35ml",
+      "Asad Bourbon 35ml",
+      "Khamrah Qahwa 35ml",
+      "Odyssey Coffee Toffee 35ml"
+    ],
+    "comparable": "",
+    "active": true
+  },
+  {
+    "id": "sg-011",
+    "size": "35ml",
+    "names": [
+      "Yara 35ml",
+      "Noble Blush 35ml",
+      "Odyssey Candee 35ml",
+      "Club de Nuit Woman 35ml",
+      "Vulcan Baie 35ml"
+    ],
+    "comparable": "Ariana Grande Cloud / Sol de Janeiro Cheirosa 62",
+    "active": true
+  },
+  {
+    "id": "sg-012",
+    "size": "35ml",
+    "names": [
+      "Yara Moi 35ml",
+      "Fakhar Rose 35ml",
+      "Club de Nuit Woman 35ml",
+      "Fakhar Gold Extrait 35ml",
+      "Atheeri 35ml"
+    ],
+    "comparable": "Givenchy L’Interdit",
+    "active": true
+  },
+  {
+    "id": "sg-013",
+    "size": "35ml",
+    "names": [
+      "Yara Tous 35ml",
+      "Island Bliss 35ml",
+      "Mayar Cherry 35ml",
+      "Odyssey Bahamas 35ml"
+    ],
+    "comparable": "",
+    "active": true
+  },
+  {
+    "id": "sg-014",
+    "size": "35ml",
+    "names": [
+      "Asad 35ml",
+      "Bade’e al Oud for Glory 35ml",
+      "Hawas Fire 35ml",
+      "Odyssey Aoud 35ml"
+    ],
+    "comparable": "Dior Sauvage Elixir",
+    "active": true
+  },
+  {
+    "id": "sg-015",
+    "size": "35ml",
+    "names": [
+      "Yum Yum 35ml",
+      "Bade’e al Oud Noble Blush 35ml",
+      "Berry on Top 35ml",
+      "Hayaati Flourence"
+    ],
+    "comparable": "",
+    "active": true
+  },
+  {
+    "id": "sg-016",
+    "size": "35ml",
+    "names": [
+      "Xerjoff Soprano 35ml",
+      "Xerjoff Opera",
+      "Bade’e al Oud Amethyst 35ml"
+    ],
+    "comparable": "Initio Atomic Rose",
+    "active": true
+  },
+  {
+    "id": "sg-017",
+    "size": "35ml",
+    "names": [
+      "Bade’e al Oud Honor & Glory 35ml",
+      "Club de Nuit Milestone 35ml",
+      "Whipped Pleasure 35ml"
+    ],
+    "comparable": "",
+    "active": true
+  },
+  {
+    "id": "sg-018",
+    "size": "35ml",
+    "names": [
+      "Asad Zanzibar 35ml",
+      "Qaed al Fursan Unlimited 35ml",
+      "Amber Oud White Edition 35ml",
+      "Vulcan Sable 35ml"
+    ],
+    "comparable": "",
+    "active": true
+  },
+  {
+    "id": "sg-019",
+    "size": "250ml",
+    "names": [
+      "Khamrah 250ml",
+      "Khamrah Qahwa 250ml",
+      "Raghba 250ml"
+    ],
+    "comparable": "Kilian Angels’ Share",
+    "active": true
+  },
+  {
+    "id": "sg-020",
+    "size": "250ml",
+    "names": [
+      "Club de Nuit Intense Man 250ml",
+      "Fakhar Black 250ml",
+      "Erba Pura 250ml"
+    ],
+    "comparable": "Creed Aventus",
+    "active": true
+  },
+  {
+    "id": "sg-021",
+    "size": "250ml",
+    "names": [
+      "Yara Moi 250ml",
+      "Fakhar Rose 250ml",
+      "Victoria 250ml",
+      "Island Bliss 250ml",
+      "Ameerat al Arab 250ml"
+    ],
+    "comparable": "Givenchy L’Interdit",
+    "active": true
+  },
+  {
+    "id": "sg-022",
+    "size": "250ml",
+    "names": [
+      "Yara 250ml",
+      "Yara Candy 250ml",
+      "Mayar Pink 250ml",
+      "Mayar Cherry 250ml",
+      "Habik for Woman 250ml"
+    ],
+    "comparable": "Ariana Grande Cloud / Sol de Janeiro Cheirosa 62",
+    "active": true
+  },
+  {
+    "id": "sg-023",
+    "size": "100ml Originales",
+    "names": [
+      "Khamrah 100ml Original",
+      "Khamrah Qahwa 100ml Original",
+      "Liquid Brun 100ml Original",
+      "Your Touch Extrait 100ml Original"
+    ],
+    "comparable": "Kilian Angels’ Share",
+    "active": true
+  },
+  {
+    "id": "sg-024",
+    "size": "100ml Originales",
+    "names": [
+      "Liquid Brun 100ml Original",
+      "Asad Bourbon 100ml Original",
+      "Odyssey Homme White 100ml Original",
+      "Hawas Elixir 100ml Original"
+    ],
+    "comparable": "Parfums de Marly Althaïr",
+    "active": true
+  },
+  {
+    "id": "sg-025",
+    "size": "100ml Originales",
+    "names": [
+      "B.A.D. Homme 100ml Original",
+      "9pm 100ml Original",
+      "Club de Nuit Intense Man 100ml Original",
+      "Salvo Elixir 100ml Original"
+    ],
+    "comparable": "",
+    "active": true
+  },
+  {
+    "id": "sg-026",
+    "size": "100ml Originales",
+    "names": [
+      "Yara 100ml Original",
+      "Bade'e al Oud Noble Blush 100ml Original",
+      "Delilah Pour Femme 100ml Original",
+      "Yum Yum 100ml Original"
+    ],
+    "comparable": "Ariana Grande Cloud / Sol de Janeiro Cheirosa 62",
+    "active": true
+  },
+  {
+    "id": "sg-027",
+    "size": "100ml Originales",
+    "names": [
+      "Fakhar Rose 100ml Original",
+      "B.A.D. Femme 100ml Original"
+    ],
+    "comparable": "",
+    "active": true
+  },
+  {
+    "id": "sg-028",
+    "size": "100ml Originales",
+    "names": [
+      "Mandarin Sky 100ml Original",
+      "Amber Oud Gold Edition 100ml Original"
+    ],
+    "comparable": "",
+    "active": true
+  }
+];
+  const GROUPS_KEY = 'aura_suggestion_groups_v2';
+  const NOTES_KEY = 'aura_customer_notes_v2';
+
+  function esc(value) {
+    if (typeof escapeHtml === 'function') return escapeHtml(value);
+    return String(value == null ? '' : value)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  function attr(value) {
+    return esc(value).replace(/`/g, '&#96;');
+  }
+
+  function money(value) {
+    return '$' + Number(value || 0).toLocaleString('es-AR');
+  }
+
+  function readJSON(key, fallback) {
+    try {
+      const value = JSON.parse(localStorage.getItem(key) || 'null');
+      return value == null ? fallback : value;
+    } catch (error) {
+      return fallback;
+    }
+  }
+
+  function writeJSON(key, value) {
+    try { localStorage.setItem(key, JSON.stringify(value)); } catch (error) {}
+  }
+
+  function normalize(value) {
+    return String(value || '')
+      .toLowerCase()
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      .replace(/[’']/g, '')
+      .replace(/\b(originales|original|bodysplash|edp|edt|extrait|ml)\b/g, ' ')
+      .replace(/\b(35|100|250)\b/g, ' ')
+      .replace(/[^a-z0-9]+/g, ' ')
+      .trim();
+  }
+
+  function compact(value) {
+    return normalize(value).replace(/\s+/g, '');
+  }
+
+  function words(value) {
+    return normalize(value).split(/\s+/).filter(Boolean);
+  }
+
+  function productText(product) {
+    return [product?.name, product?.size, product?.desc, getCategoryNameSafe(product?.cat), getSubcategoryNameSafe(product?.cat2)].filter(Boolean).join(' ');
+  }
+
+  function getCategoryNameSafe(id) {
+    try { return typeof getCategoryName === 'function' ? getCategoryName(id) : id; } catch (e) { return id || ''; }
+  }
+
+  function getSubcategoryNameSafe(id) {
+    try { return typeof getSubcategoryName === 'function' ? getSubcategoryName(id) : id; } catch (e) { return id || ''; }
+  }
+
+  function cleanGroup(group, idx) {
+    const names = Array.isArray(group?.names) ? group.names.map(v => String(v || '').trim()).filter(Boolean) : [];
+    return {
+      id: group?.id || ('sg-' + Date.now() + '-' + idx),
+      size: String(group?.size || '').trim(),
+      names,
+      comparable: String(group?.comparable || '').trim(),
+      active: group?.active !== false
+    };
+  }
+
+  function loadGroups() {
+    const saved = readJSON(GROUPS_KEY, null);
+    const source = Array.isArray(saved) && saved.length ? saved : DEFAULT_SUGGESTION_GROUPS;
+    const groups = source.map(cleanGroup).filter(g => g.names.length);
+    if (!saved) writeJSON(GROUPS_KEY, groups);
+    return groups;
+  }
+
+  function saveGroups(groups) {
+    writeJSON(GROUPS_KEY, groups.map(cleanGroup).filter(g => g.names.length));
+  }
+
+  function normalizeTubitoPromo() {
+    try {
+      const promo = (typeof PROMOS_DATA !== 'undefined' ? PROMOS_DATA : []).find(p => p.id === 'promo-tubitos-arabes');
+      if (!promo) return;
+      promo.sizeMatch = '35ml';
+      promo.tiers = [
+        { qty: 1, unitPrice: 8000, total: 8000, label: '1x $8.000' },
+        { qty: 2, unitPrice: 7500, total: 15000, label: '2x $15.000 ($7.500 c/u)' },
+        { qty: 3, unitPrice: 7000, total: 21000, label: '3x $21.000 ($7.000 c/u)' },
+        { qty: 4, unitPrice: 7000, total: 28000, label: '4x $28.000 ($7.000 c/u)' },
+        { qty: 5, unitPrice: 7000, total: 35000, label: '5x $35.000 ($7.000 c/u)' },
+        { qty: 6, unitPrice: 7000, total: 42000, label: '6x $42.000 ($7.000 c/u)' },
+        { qty: 7, unitPrice: 7000, total: 49000, label: '7x $49.000 ($7.000 c/u)' },
+        { qty: 8, unitPrice: 7000, total: 56000, label: '8x $56.000 ($7.000 c/u)' },
+        { qty: 9, unitPrice: 7000, total: 63000, label: '9x $63.000 ($7.000 c/u)' },
+        { qty: 10, unitPrice: 3000, total: 30000, label: 'Desde 10 unidades: $3.000 c/u' }
+      ];
+      promo.note = 'Desde 4 hasta 9 unidades: $7.000 c/u. Desde 10 unidades: $3.000 c/u.';
+      if (typeof LS !== 'undefined' && LS?.set) LS.set('promos', PROMOS_DATA);
+      else writeJSON('aura_promos', PROMOS_DATA);
+    } catch (error) {
+      console.warn('No se pudo normalizar la promo de tubitos', error);
+    }
+  }
+
+  try {
+    window.getPromoTier = function(promo, qty) {
+      qty = Number(qty || 0);
+      if (!promo || !qty) return null;
+      if (promo.id === 'promo-tubitos-arabes') {
+        if (qty >= 10) return { qty, unitPrice: 3000, total: qty * 3000, label: `${qty}x ${money(qty * 3000)} ($3.000 c/u)` };
+        if (qty >= 4 && qty <= 9) return { qty, unitPrice: 7000, total: qty * 7000, label: `${qty}x ${money(qty * 7000)} ($7.000 c/u)` };
+      }
+      const exact = (promo.tiers || []).find(t => Number(t.qty) === qty);
+      return exact || null;
+    };
+  } catch (error) {}
+
+  function findGroupByName(name) {
+    const q = compact(name);
+    if (!q) return null;
+    const groups = loadGroups().filter(g => g.active !== false);
+    let best = null;
+    let bestScore = -1;
+    groups.forEach(group => {
+      const candidates = group.names.concat(group.comparable ? [group.comparable] : []);
+      candidates.forEach(candidate => {
+        const c = compact(candidate);
+        let score = 0;
+        if (c === q) score = 100;
+        else if (c.includes(q) || q.includes(c)) score = 80;
+        else {
+          const qWords = words(q);
+          const cWords = words(c);
+          const shared = qWords.filter(w => cWords.includes(w)).length;
+          score = shared ? shared * 12 : 0;
+        }
+        if (score > bestScore) {
+          bestScore = score;
+          best = group;
+        }
+      });
+    });
+    return bestScore >= 12 ? best : null;
+  }
+
+  function resolveProduct(name) {
+    if (!Array.isArray(PRODUCTS)) return null;
+    const q = compact(name);
+    if (!q) return null;
+    let best = null;
+    let bestScore = -1;
+    PRODUCTS.forEach(product => {
+      const p = compact([product.name, product.size].filter(Boolean).join(' '));
+      const pName = compact(product.name);
+      let score = 0;
+      if (p === q || pName === q) score = 100;
+      else if (p.includes(q) || q.includes(pName)) score = 80;
+      else {
+        const qWords = words(name);
+        const pWords = words(product.name);
+        const shared = qWords.filter(w => pWords.includes(w)).length;
+        score = shared ? shared * 14 : 0;
+      }
+      if (score > bestScore) {
+        bestScore = score;
+        best = product;
+      }
+    });
+    return bestScore >= 14 ? best : null;
+  }
+
+  function productGroup(product) {
+    if (!product) return null;
+    return findGroupByName([product.name, product.size].filter(Boolean).join(' ')) || findGroupByName(product.name);
+  }
+
+  function groupProducts(group, excludeIds) {
+    const exclude = new Set(excludeIds || []);
+    if (!group) return [];
+    const out = [];
+    const seen = new Set();
+    group.names.forEach(name => {
+      const product = resolveProduct(name);
+      if (!product || seen.has(product.id) || exclude.has(product.id)) return;
+      if (Number(product.stock || 0) <= 0) return;
+      seen.add(product.id);
+      out.push(product);
+    });
+    return out;
+  }
+
+  function suggestionsForProduct(product, excludeIds) {
+    const group = productGroup(product);
+    const products = groupProducts(group, [product?.id].concat(excludeIds || []));
+    return { group, products };
+  }
+
+  function notesKey(customer) {
+    const base = [customer?.name || customer?.customerName || '', customer?.phone || ''].join('|');
+    return normalize(base) || normalize(customer?.name || customer?.customerName || 'sin-nombre');
+  }
+
+  function loadNotes() {
+    return readJSON(NOTES_KEY, {});
+  }
+
+  function saveNotes(notes) {
+    writeJSON(NOTES_KEY, notes || {});
+  }
+
+  function getCustomerNotes(customer) {
+    const notes = loadNotes();
+    return notes[notesKey(customer)] || { notes: customer?.preferenceNotes || customer?.notes || '' };
+  }
+
+  function setCustomerNotes(customer, noteText) {
+    const notes = loadNotes();
+    const key = notesKey(customer);
+    notes[key] = { notes: String(noteText || '').trim(), updatedAt: new Date().toISOString() };
+    saveNotes(notes);
+  }
+
+  function sameCustomer(order, customer) {
+    const cn = normalize(customer?.name || customer?.customerName);
+    const on = normalize(order?.customerName);
+    const cp = normalize(customer?.phone);
+    const op = normalize(order?.phone);
+    return (cn && on && cn === on) || (cp && op && cp === op);
+  }
+
+  function keywordScore(text, noteText) {
+    const hay = normalize(text);
+    const note = normalize(noteText);
+    const keywords = ['dulce','vainilla','chocolate','cafe','gourmand','fresco','citrico','limpio','intenso','invierno','verano','diario','oficina','noche','masculino','femenino','unisex','elegante','arab'];
+    return keywords.reduce((score, key) => score + (note.includes(key) && hay.includes(key) ? 1 : 0), 0);
+  }
+
+  function clientRecommendations(customer) {
+    const noteText = getCustomerNotes(customer).notes || '';
+    const history = Array.isArray(ORDERS) ? ORDERS.filter(order => sameCustomer(order, customer)) : [];
+    const boughtIds = new Set();
+    const scored = new Map();
+
+    history.forEach(order => {
+      (order.items || []).forEach(item => {
+        if (item.id) boughtIds.add(item.id);
+        const product = (Array.isArray(PRODUCTS) && item.id) ? PRODUCTS.find(p => p.id === item.id) : resolveProduct(item.name);
+        const info = suggestionsForProduct(product || { name: item.name }, Array.from(boughtIds));
+        info.products.forEach(p => {
+          const current = scored.get(p.id) || { product: p, score: 0, reason: [] };
+          current.score += 8;
+          if (info.group?.comparable) current.reason.push(info.group.comparable);
+          scored.set(p.id, current);
+        });
+      });
+    });
+
+    if (noteText) {
+      (Array.isArray(PRODUCTS) ? PRODUCTS : []).forEach(product => {
+        if (Number(product.stock || 0) <= 0 || boughtIds.has(product.id)) return;
+        const group = productGroup(product);
+        const groupText = group ? group.names.join(' ') + ' ' + group.comparable : '';
+        const score = keywordScore(productText(product) + ' ' + groupText, noteText);
+        if (score > 0) {
+          const current = scored.get(product.id) || { product, score: 0, reason: [] };
+          current.score += score * 3;
+          current.reason.push('Coincide con preferencias anotadas');
+          scored.set(product.id, current);
+        }
+      });
+    }
+
+    return Array.from(scored.values())
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 8);
+  }
+
+  function productCardHTML(product, options) {
+    const stock = Number(product.stock || 0);
+    const price = Number(product.price || 0);
+    const extra = options?.extra || '';
+    const action = options?.action || '';
+    return `<div class="aura-sug-product">
+      <div>
+        <strong>${esc(product.name)}</strong>
+        <div class="aura-sale-meta">${esc(product.size || '')} · Stock: ${stock} · ${money(price)}</div>
+        ${extra}
+      </div>
+      ${action}
+    </div>`;
+  }
+
+  function renderSearchResults(query, targetId, actionMode) {
+    const box = document.getElementById(targetId);
+    if (!box) return;
+    const group = findGroupByName(query);
+    if (!query || !String(query).trim()) {
+      box.innerHTML = '<div class="aura-muted-mini">Ingresá un perfume para ver su grupo de similares y comparación de marca.</div>';
+      return;
+    }
+    if (!group) {
+      box.innerHTML = `<div class="aura-muted-mini">No hay grupo cargado para "${esc(query)}".</div>`;
+      return;
+    }
+    const resolved = resolveProduct(query);
+    const products = groupProducts(group, resolved ? [resolved.id] : []);
+    box.innerHTML = `
+      <div class="aura-sale-block">
+        <div class="aura-sale-block-title">Grupo encontrado</div>
+        <div class="aura-muted-mini">Tamaño: <strong>${esc(group.size || 'Sin tamaño')}</strong></div>
+        <div class="aura-muted-mini">Marca comparable: <strong>${esc(group.comparable || 'Sin comparación cargada')}</strong></div>
+        <div class="aura-muted-mini" style="margin-top:.45rem">Perfumes del grupo: ${esc(group.names.join(', '))}</div>
+      </div>
+      <div class="aura-sug-list">
+        ${products.length ? products.map(product => productCardHTML(product, {
+          action: actionMode === 'sale' ? `<button type="button" onclick="AuraManualSales.add('${attr(product.id)}')">Agregar</button>` : ''
+        })).join('') : '<div class="aura-muted-mini">No hay perfumes del grupo con stock disponible.</div>'}
+      </div>`;
+  }
+
+  function ensureManualSaleModal() {
+    if (document.getElementById('aura-sale-modal')) return;
+    const overlay = document.createElement('div');
+    overlay.id = 'aura-sale-modal';
+    overlay.className = 'aura-sale-modal-overlay';
+    overlay.innerHTML = `
+      <div class="aura-sale-modal" role="dialog" aria-label="Registrar venta manual">
+        <div class="aura-sale-head">
+          <div>
+            <div class="aura-sale-title">Registrar Venta</div>
+            <div class="aura-sale-sub">Descuenta stock, aplica promociones y guarda el comprador.</div>
+          </div>
+          <button class="aura-sale-close" type="button" onclick="AuraManualSales.close()">×</button>
+        </div>
+        <div class="aura-sale-body">
+          <div class="aura-sale-left">
+            <input id="aura-sale-search" class="aura-sale-search" placeholder="Buscar producto por nombre, tamaño o categoría" oninput="AuraManualSales.search(this.value)">
+            <div id="aura-sale-products" class="aura-sale-products"></div>
+          </div>
+          <div class="aura-sale-right">
+            <div class="aura-sale-block">
+              <div class="aura-sale-block-title">Venta actual</div>
+              <div id="aura-sale-items" class="aura-sale-items"></div>
+              <div id="aura-sale-totals"></div>
+            </div>
+            <div class="aura-sale-block">
+              <div class="aura-sale-block-title">Sugerencias automáticas</div>
+              <div id="aura-sale-suggestions" class="aura-sug-list"></div>
+            </div>
+            <div class="aura-sale-block">
+              <div class="aura-sale-block-title">Datos del comprador</div>
+              <div class="aura-sale-form">
+                <input id="aura-sale-buyer-name" placeholder="Nombre del comprador">
+                <input id="aura-sale-buyer-contact" placeholder="Contacto / teléfono">
+                <input id="aura-sale-buyer-city" placeholder="Ciudad">
+                <input id="aura-sale-buyer-email" placeholder="Email">
+                <textarea id="aura-sale-buyer-pref" class="full" placeholder="Anotaciones/preferencias. Ej: dulce, intenso, cítrico, invierno"></textarea>
+                <textarea id="aura-sale-buyer-notes" class="full" placeholder="Notas internas de la venta"></textarea>
+              </div>
+              <button id="aura-sale-finalize" class="aura-sale-final" type="button" onclick="AuraManualSales.finalize()">Finalizar Venta</button>
+            </div>
+          </div>
+        </div>
+      </div>`;
+    document.body.appendChild(overlay);
+  }
+
+  const saleState = {
+    items: {},
+    query: '',
+    focusProductId: ''
+  };
+
+  function saleItems() {
+    return Object.values(saleState.items).map(row => ({
+      id: row.product.id,
+      name: row.product.name,
+      price: Number(row.product.price || 0),
+      qty: Number(row.qty || 0),
+      emoji: row.product.emoji,
+      images: row.product.images || [],
+      size: row.product.size || ''
+    }));
+  }
+
+  function saleTotals() {
+    const items = saleItems();
+    const subtotal = items.reduce((sum, item) => sum + item.price * item.qty, 0);
+    const promo = typeof getCartActiveDiscounts === 'function'
+      ? getCartActiveDiscounts(items)
+      : { totalDiscount: 0, discountLines: [] };
+    return {
+      items,
+      subtotal,
+      discount: Number(promo.totalDiscount || 0),
+      lines: promo.discountLines || [],
+      total: Math.max(0, subtotal - Number(promo.totalDiscount || 0))
+    };
+  }
+
+  function renderSaleProducts() {
+    const box = document.getElementById('aura-sale-products');
+    if (!box) return;
+    const q = normalize(saleState.query);
+    const list = (Array.isArray(PRODUCTS) ? PRODUCTS : [])
+      .filter(product => Number(product.stock || 0) > 0)
+      .filter(product => !q || normalize([product.name, product.size, productText(product)].join(' ')).includes(q))
+      .slice(0, 80);
+    box.innerHTML = list.length ? list.map(product => `
+      <div class="aura-sale-product">
+        <div>
+          <strong>${esc(product.name)}</strong>
+          <div class="aura-sale-meta">${esc(product.size || '')} · Stock: ${Number(product.stock || 0)} · ${money(product.price)}</div>
+        </div>
+        <button class="aura-sale-add" type="button" onclick="AuraManualSales.add('${attr(product.id)}')">Agregar</button>
+      </div>`).join('') : '<div class="aura-muted-mini">Sin productos con stock para ese criterio.</div>';
+  }
+
+  function renderSaleCart() {
+    const itemsBox = document.getElementById('aura-sale-items');
+    const totalsBox = document.getElementById('aura-sale-totals');
+    if (!itemsBox || !totalsBox) return;
+    const items = saleItems();
+    if (!items.length) {
+      itemsBox.innerHTML = '<div class="aura-muted-mini">Seleccioná productos del inventario para iniciar la venta.</div>';
+      totalsBox.innerHTML = '';
+      renderSaleSuggestions();
+      return;
+    }
+    itemsBox.innerHTML = items.map(item => {
+      const product = PRODUCTS.find(p => p.id === item.id);
+      return `<div class="aura-sale-item">
+        <div>
+          <strong>${esc(item.name)}</strong>
+          <div class="aura-sale-meta">${esc(item.size || '')} · ${money(item.price)} c/u · Stock actual: ${Number(product?.stock || 0)}</div>
+        </div>
+        <div class="aura-sale-qty">
+          <button type="button" onclick="AuraManualSales.add('${attr(item.id)}', -1)">−</button>
+          <span>${item.qty}</span>
+          <button type="button" onclick="AuraManualSales.add('${attr(item.id)}', 1)">+</button>
+        </div>
+      </div>`;
+    }).join('');
+    const totals = saleTotals();
+    totalsBox.innerHTML = `
+      <div class="aura-sale-total-row"><span>Subtotal</span><strong>${money(totals.subtotal)}</strong></div>
+      ${totals.lines.map(line => `<div class="aura-sale-total-row aura-sale-discount"><span>${esc(line.promo?.name || 'Promo')} aplicada</span><strong>- ${money(line.discount?.saved || 0)}</strong></div>`).join('')}
+      <div class="aura-sale-total-row final"><span>Total</span><strong>${money(totals.total)}</strong></div>`;
+    renderSaleSuggestions();
+  }
+
+  function renderSaleSuggestions() {
+    const box = document.getElementById('aura-sale-suggestions');
+    if (!box) return;
+    const focus = PRODUCTS.find(p => p.id === saleState.focusProductId) || saleItems().map(i => PRODUCTS.find(p => p.id === i.id)).filter(Boolean)[0];
+    if (!focus) {
+      box.innerHTML = '<div class="aura-muted-mini">Al seleccionar un perfume, aparecerán similares con stock.</div>';
+      return;
+    }
+    const info = suggestionsForProduct(focus, saleItems().map(i => i.id));
+    const comparable = info.group?.comparable ? `<div class="aura-muted-mini">Comparable: <strong>${esc(info.group.comparable)}</strong></div>` : '';
+    const header = `<div class="aura-muted-mini">Según ${esc(focus.name)}. ${comparable}</div>`;
+    box.innerHTML = header + (info.products.length ? info.products.map(product => productCardHTML(product, {
+      action: `<button type="button" onclick="AuraManualSales.add('${attr(product.id)}')">Agregar</button>`
+    })).join('') : '<div class="aura-muted-mini">No hay similares con stock disponible para este perfume.</div>');
+  }
+
+  function appendSalesHistory(order) {
+    const key = 'aura_sales_history';
+    const history = readJSON(key, []);
+    const date = new Date(order.date || Date.now()).toISOString().slice(0, 10);
+    (order.items || []).forEach(item => {
+      history.push({
+        date,
+        orderId: order.id,
+        productId: item.id,
+        qty: Number(item.qty || 0),
+        price: Number(item.price || 0),
+        channel: order.channel || 'Venta manual'
+      });
+    });
+    writeJSON(key, history);
+  }
+
+  function refreshAfterSale() {
+    try { saveProductsLS(); } catch (e) {}
+    try { saveOrdersLS(); } catch (e) {}
+    try {
+      if (typeof rebuildCustomersFromOrders === 'function') rebuildCustomersFromOrders();
+      if (typeof Dash !== 'undefined') {
+        Dash.renderInventory?.();
+        Dash.renderPedidos?.();
+        Dash.renderClientes?.();
+        Dash.updatePanelKPIs?.();
+        Dash.initAnalytics?.();
+      }
+      if (typeof renderProducts === 'function') renderProducts();
+    } catch (e) {}
+  }
+
+  window.AuraManualSales = {
+    open() {
+      ensureManualSaleModal();
+      saleState.items = {};
+      saleState.query = '';
+      saleState.focusProductId = '';
+      document.getElementById('aura-sale-search').value = '';
+      ['aura-sale-buyer-name','aura-sale-buyer-contact','aura-sale-buyer-city','aura-sale-buyer-email','aura-sale-buyer-pref','aura-sale-buyer-notes']
+        .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+      renderSaleProducts();
+      renderSaleCart();
+      document.getElementById('aura-sale-modal').classList.add('active');
+      document.body.style.overflow = 'hidden';
+    },
+    close() {
+      document.getElementById('aura-sale-modal')?.classList.remove('active');
+      document.body.style.overflow = '';
+    },
+    search(value) {
+      saleState.query = value || '';
+      renderSaleProducts();
+    },
+    add(id, delta) {
+      const product = PRODUCTS.find(p => p.id === id);
+      if (!product) return;
+      const step = Number(delta == null ? 1 : delta);
+      const current = Number(saleState.items[id]?.qty || 0);
+      const next = current + step;
+      if (next <= 0) {
+        delete saleState.items[id];
+      } else if (next > Number(product.stock || 0)) {
+        if (typeof showToast === 'function') showToast('No hay stock suficiente para esa cantidad.', true);
+        return;
+      } else {
+        saleState.items[id] = { product, qty: next };
+        saleState.focusProductId = id;
+      }
+      renderSaleCart();
+    },
+    finalize() {
+      const totals = saleTotals();
+      const name = String(document.getElementById('aura-sale-buyer-name')?.value || '').trim();
+      if (!totals.items.length) {
+        if (typeof showToast === 'function') showToast('Agregá al menos un producto.', true);
+        return;
+      }
+      if (!name) {
+        if (typeof showToast === 'function') showToast('Ingresá el nombre del comprador.', true);
+        return;
+      }
+      const contact = String(document.getElementById('aura-sale-buyer-contact')?.value || '').trim();
+      const city = String(document.getElementById('aura-sale-buyer-city')?.value || '').trim();
+      const email = String(document.getElementById('aura-sale-buyer-email')?.value || '').trim();
+      const pref = String(document.getElementById('aura-sale-buyer-pref')?.value || '').trim();
+      const notes = String(document.getElementById('aura-sale-buyer-notes')?.value || '').trim();
+
+      for (const item of totals.items) {
+        const product = PRODUCTS.find(p => p.id === item.id);
+        if (!product || Number(product.stock || 0) < Number(item.qty || 0)) {
+          if (typeof showToast === 'function') showToast(`Stock insuficiente para ${item.name}.`, true);
+          return;
+        }
+      }
+
+      totals.items.forEach(item => {
+        const product = PRODUCTS.find(p => p.id === item.id);
+        if (product) product.stock = Math.max(0, Number(product.stock || 0) - Number(item.qty || 0));
+      });
+
+      const order = {
+        id: 'VTA-' + Date.now().toString().slice(-8),
+        customerName: name,
+        phone: contact,
+        email,
+        city,
+        address: city || 'Venta manual',
+        notes: [notes, pref ? 'Preferencias: ' + pref : ''].filter(Boolean).join(' | '),
+        shippingMethod: 'Venta directa',
+        paymentMethod: 'Manual',
+        items: totals.items.map(item => ({ id: item.id, name: item.name, qty: item.qty, price: item.price, size: item.size || '' })),
+        subtotal: totals.subtotal,
+        delivery: 0,
+        discount: totals.discount,
+        total: totals.total,
+        date: new Date().toISOString(),
+        status: 'Confirmado',
+        channel: 'Venta manual'
+      };
+      if (Array.isArray(ORDERS)) ORDERS.unshift(order);
+      setCustomerNotes({ name, phone: contact }, [pref, notes].filter(Boolean).join('\n'));
+      appendSalesHistory(order);
+      refreshAfterSale();
+      this.close();
+      if (typeof showToast === 'function') showToast('Venta registrada y stock actualizado.');
+    }
+  };
+
+  function ensureSuggestionsSection() {
+    if (document.getElementById('sec-sugerencias-admin')) return;
+    const nav = document.querySelector('.dash-nav');
+    const configBtn = Array.from(document.querySelectorAll('.dash-nav-item')).find(btn => (btn.getAttribute('onclick') || '').includes("'config'"));
+    if (nav && !document.getElementById('dash-nav-sugerencias-admin')) {
+      const btn = document.createElement('button');
+      btn.id = 'dash-nav-sugerencias-admin';
+      btn.className = 'dash-nav-item';
+      btn.setAttribute('onclick', "App.dashNav(this,'sugerencias-admin')");
+      btn.innerHTML = '<span class="nav-icon">◎</span>Sugerencias';
+      nav.insertBefore(btn, configBtn || null);
+    }
+    const main = document.getElementById('dash-main');
+    const configSec = document.getElementById('sec-config');
+    if (!main) return;
+    const sec = document.createElement('div');
+    sec.id = 'sec-sugerencias-admin';
+    sec.style.display = 'none';
+    sec.innerHTML = `
+      <div class="dash-topbar">
+        <div>
+          <button class="dash-back" onclick="App.show('s-portal')">← Volver al portal</button>
+          <h1 class="dash-page-title display">Sugerencias</h1>
+          <p class="dash-page-sub">Grupos editables, comparaciones de marca y recomendaciones con stock real.</p>
+        </div>
+        <div class="dash-actions">
+          <button class="btn-dark" onclick="AuraRecommendations.addGroup()">+ Nuevo grupo</button>
+        </div>
+      </div>
+      <div class="aura-sug-admin aura-sug-admin-grid">
+        <div class="section-card">
+          <div class="section-card-hdr">
+            <span class="section-card-title display">Buscador rápido</span>
+          </div>
+          <input id="aura-sug-admin-query" placeholder="Ingresá un perfume. Ej: Yara Moi, Erba Pura, Khamrah" oninput="AuraRecommendations.searchAdmin(this.value)">
+          <div id="aura-sug-admin-results" style="margin-top:1rem"></div>
+        </div>
+        <div class="section-card">
+          <div class="section-card-hdr">
+            <span class="section-card-title display">Estado de la base</span>
+          </div>
+          <div id="aura-sug-admin-stats" class="aura-muted-mini"></div>
+          <div style="display:flex;gap:.6rem;flex-wrap:wrap;margin-top:1rem">
+            <button class="btn-light" type="button" onclick="AuraRecommendations.resetSeed()">Restaurar base desde Excel</button>
+          </div>
+        </div>
+        <div class="section-card" style="grid-column:1/-1">
+          <div class="section-card-hdr">
+            <span class="section-card-title display">Grupos de sugerencias</span>
+          </div>
+          <div id="aura-sug-groups-list"></div>
+        </div>
+      </div>`;
+    main.insertBefore(sec, configSec || null);
+  }
+
+  function renderAdmin() {
+    ensureSuggestionsSection();
+    const groups = loadGroups();
+    const stats = document.getElementById('aura-sug-admin-stats');
+    if (stats) {
+      const active = groups.filter(g => g.active !== false).length;
+      const perfumes = groups.reduce((sum, g) => sum + g.names.length, 0);
+      stats.innerHTML = `<strong>${active}</strong> grupos activos · <strong>${perfumes}</strong> perfumes vinculados · Conectado al stock actual de la página.`;
+    }
+    const list = document.getElementById('aura-sug-groups-list');
+    if (!list) return;
+    list.innerHTML = groups.map(group => `
+      <div class="aura-sug-group-card" data-group-id="${attr(group.id)}">
+        <div style="display:grid;grid-template-columns:160px 1fr 1fr;gap:.65rem">
+          <input value="${attr(group.size)}" data-field="size" placeholder="Tamaño">
+          <input value="${attr(group.comparable)}" data-field="comparable" placeholder="Perfume de marca comparable">
+          <label class="aura-muted-mini" style="display:flex;align-items:center;gap:.45rem">
+            <input type="checkbox" data-field="active" ${group.active !== false ? 'checked' : ''} style="width:auto"> Grupo activo
+          </label>
+        </div>
+        <textarea data-field="names" style="margin-top:.65rem" placeholder="Un perfume por línea">${esc(group.names.join('\n'))}</textarea>
+        <div class="aura-sug-group-actions">
+          <button type="button" onclick="AuraRecommendations.saveGroup('${attr(group.id)}')">Guardar grupo</button>
+          <button class="btn-light" type="button" onclick="AuraRecommendations.deleteGroup('${attr(group.id)}')">Eliminar</button>
+        </div>
+      </div>`).join('');
+  }
+
+  function getGroupCard(id) {
+    return document.querySelector(`.aura-sug-group-card[data-group-id="${CSS.escape(id)}"]`);
+  }
+
+  window.AuraRecommendations = {
+    loadGroups,
+    saveGroups,
+    findGroupByName,
+    resolveProduct,
+    productGroup,
+    suggestionsForProduct,
+    clientRecommendations,
+    getCustomerNotes,
+    setCustomerNotes,
+    notesKey,
+    renderAdmin,
+    searchAdmin(value) {
+      renderSearchResults(value, 'aura-sug-admin-results', 'admin');
+    },
+    addGroup() {
+      const groups = loadGroups();
+      groups.unshift({
+        id: 'sg-' + Date.now(),
+        size: '35ml',
+        names: ['Nuevo perfume 35ml'],
+        comparable: '',
+        active: true
+      });
+      saveGroups(groups);
+      renderAdmin();
+    },
+    saveGroup(id) {
+      const groups = loadGroups();
+      const card = getGroupCard(id);
+      if (!card) return;
+      const group = groups.find(g => g.id === id);
+      if (!group) return;
+      group.size = card.querySelector('[data-field="size"]')?.value || '';
+      group.comparable = card.querySelector('[data-field="comparable"]')?.value || '';
+      group.active = !!card.querySelector('[data-field="active"]')?.checked;
+      group.names = String(card.querySelector('[data-field="names"]')?.value || '')
+        .split(/\n|,/).map(v => v.trim()).filter(Boolean);
+      saveGroups(groups);
+      renderAdmin();
+      if (typeof showToast === 'function') showToast('Grupo guardado.');
+    },
+    deleteGroup(id) {
+      if (!confirm('Eliminar este grupo de sugerencias?')) return;
+      saveGroups(loadGroups().filter(g => g.id !== id));
+      renderAdmin();
+    },
+    resetSeed() {
+      if (!confirm('Restaurar la base de sugerencias cargada desde Excel?')) return;
+      saveGroups(DEFAULT_SUGGESTION_GROUPS);
+      renderAdmin();
+    },
+    openClientProfile(key) {
+      ensureClientProfileModal();
+      const customer = (Array.isArray(CUSTOMERS) ? CUSTOMERS : []).find(c => notesKey(c) === key);
+      if (!customer) return;
+      const modal = document.getElementById('aura-client-profile-modal');
+      modal._customerKey = key;
+      renderClientProfile(customer);
+      modal.classList.add('active');
+      document.body.style.overflow = 'hidden';
+    },
+    closeClientProfile() {
+      document.getElementById('aura-client-profile-modal')?.classList.remove('active');
+      document.body.style.overflow = '';
+    },
+    saveClientProfile() {
+      const key = document.getElementById('aura-client-profile-modal')?._customerKey;
+      const customer = (Array.isArray(CUSTOMERS) ? CUSTOMERS : []).find(c => notesKey(c) === key);
+      if (!customer) return;
+      const notes = document.getElementById('aura-client-notes')?.value || '';
+      setCustomerNotes(customer, notes);
+      renderClientProfile(customer);
+      try { Dash.renderClientes?.(); } catch (e) {}
+      if (typeof showToast === 'function') showToast('Ficha de cliente guardada.');
+    }
+  };
+
+  function ensureClientProfileModal() {
+    if (document.getElementById('aura-client-profile-modal')) return;
+    const overlay = document.createElement('div');
+    overlay.id = 'aura-client-profile-modal';
+    overlay.className = 'aura-client-profile-overlay';
+    overlay.innerHTML = `
+      <div class="aura-client-profile" role="dialog" aria-label="Ficha de cliente">
+        <div class="aura-client-head">
+          <div>
+            <div class="aura-client-title" id="aura-client-title">Ficha de cliente</div>
+            <div class="aura-client-sub" id="aura-client-sub"></div>
+          </div>
+          <button class="aura-client-close" type="button" onclick="AuraRecommendations.closeClientProfile()">×</button>
+        </div>
+        <div class="aura-client-body" id="aura-client-body"></div>
+      </div>`;
+    document.body.appendChild(overlay);
+  }
+
+  function renderClientProfile(customer) {
+    const body = document.getElementById('aura-client-body');
+    const title = document.getElementById('aura-client-title');
+    const sub = document.getElementById('aura-client-sub');
+    if (!body || !customer) return;
+    title.textContent = customer.name || 'Cliente';
+    sub.textContent = `${customer.phone || 'Sin teléfono'} · ${customer.orders || 0} compras`;
+    const notes = getCustomerNotes(customer).notes || '';
+    const history = (Array.isArray(ORDERS) ? ORDERS : []).filter(order => sameCustomer(order, customer)).slice(0, 8);
+    const recs = clientRecommendations(customer);
+    body.innerHTML = `
+      <div class="aura-client-grid">
+        <div>
+          <div class="aura-sale-block-title">Anotaciones/preferencias</div>
+          <textarea id="aura-client-notes" placeholder="Ej: dulce, intenso, buena duración, opciones para invierno">${esc(notes)}</textarea>
+          <button style="margin-top:.65rem" type="button" onclick="AuraRecommendations.saveClientProfile()">Guardar ficha</button>
+          <div class="aura-sale-block-title" style="margin-top:1.2rem">Historial reciente</div>
+          ${history.length ? history.map(order => `<div class="aura-mini-order"><strong>${esc(order.id)}</strong> · ${money(order.total)}<br>${esc((order.items || []).map(i => `${i.name} x${i.qty}`).join(', '))}</div>`).join('') : '<div class="aura-muted-mini">Sin compras registradas.</div>'}
+        </div>
+        <div>
+          <div class="aura-sale-block-title">Sugeridos para este cliente</div>
+          <div class="aura-sug-list">
+            ${recs.length ? recs.map(row => {
+              const group = productGroup(row.product);
+              const extra = `<div class="aura-muted-mini">${group?.comparable ? 'Comparable: ' + esc(group.comparable) : 'Relacionado con su historial/preferencias'}</div>`;
+              return productCardHTML(row.product, { extra });
+            }).join('') : '<div class="aura-muted-mini">Agregá compras o preferencias para generar recomendaciones.</div>'}
+          </div>
+        </div>
+      </div>`;
+  }
+
+  function injectInventoryButton() {
+    const actions = document.querySelector('#sec-inventario .dash-actions');
+    if (!actions || document.getElementById('aura-open-manual-sale')) return;
+    const btn = document.createElement('button');
+    btn.id = 'aura-open-manual-sale';
+    btn.className = 'btn-outline';
+    btn.type = 'button';
+    btn.textContent = 'Registrar Venta';
+    btn.onclick = function(){ AuraManualSales.open(); };
+    actions.insertBefore(btn, actions.firstChild);
+  }
+
+
+  function patchOrdersTable() {
+    if (!window.Dash || Dash.__auraOrdersPatch) return;
+    Dash.renderPedidos = function() {
+      const t = document.getElementById('ped-tbody');
+      if (!t || !Array.isArray(ORDERS)) return;
+      const q = (document.getElementById('ped-search')?.value || '').toLowerCase().trim();
+      const list = ORDERS.filter(o => !q || [
+        o.id, o.customerName, o.phone, o.address, o.status, o.channel,
+        (o.items || []).map(i => i.name).join(' ')
+      ].join(' ').toLowerCase().includes(q));
+      if (!list.length) {
+        t.innerHTML = '<tr><td colspan="8" class="tbl-empty">0 de 0 pedidos</td></tr>';
+        return;
+      }
+      t.innerHTML = list.map(o => {
+        const badgeClass = this.getOrderStatusBadgeClass ? this.getOrderStatusBadgeClass(o.status) : 'blue';
+        const channel = o.channel || 'Pedido web';
+        const deliveryLabel = channel === 'Venta manual'
+          ? 'Venta directa'
+          : (o.delivery ? money(o.delivery) : 'Retiro / sin cálculo');
+        const discountLabel = Number(o.discount || 0) > 0 ? ` · Ahorro ${money(o.discount)}` : '';
+        return `<tr>
+          <td><strong>${esc(o.id)}</strong><div class="tbl-prod-sub">${esc(channel)}</div></td>
+          <td>${esc(o.customerName || 'Cliente sin nombre')}<div class="tbl-prod-sub">${esc(o.phone || 'Sin teléfono')}</div></td>
+          <td>${esc((o.items || []).map(i => `${i.name} x${i.qty}`).join(', '))}<div class="tbl-prod-sub">${esc(discountLabel.replace(/^ · /,''))}</div></td>
+          <td>${money(o.total || 0)}</td>
+          <td>${esc(deliveryLabel)}</td>
+          <td>${o.date ? formatDateTime(o.date) : '—'}</td>
+          <td><span class="badge ${badgeClass}">${esc(o.status || 'Pendiente de confirmación')}</span></td>
+          <td>
+            <div class="order-actions-cell">
+              <button class="tbl-action" onclick="Dash.editOrder('${attr(o.id)}')">Editar</button>
+              <button class="tbl-action ok" onclick="Dash.setOrderStatus('${attr(o.id)}','Confirmado')">Confirmar</button>
+              <button class="tbl-action warn" onclick="Dash.setOrderStatus('${attr(o.id)}','Denegado')">Denegar</button>
+              <button class="tbl-action del" onclick="Dash.deleteOrder('${attr(o.id)}')">Eliminar</button>
+            </div>
+          </td>
+        </tr>`;
+      }).join('');
+    };
+    Dash.__auraOrdersPatch = true;
+  }
+
+  function patchClientTable() {
+    if (!window.Dash || Dash.__auraClientPatch) return;
+    const original = Dash.renderClientes?.bind(Dash);
+    Dash.renderClientes = function() {
+      const t = document.getElementById('cli-tbody');
+      if (!t || !Array.isArray(CUSTOMERS)) {
+        if (original) return original();
+        return;
+      }
+      const q = (document.getElementById('cli-search')?.value || '').toLowerCase().trim();
+      const list = CUSTOMERS.filter(c => !q || [c.name, c.phone, c.segment, getCustomerNotes(c).notes].join(' ').toLowerCase().includes(q));
+      if (!list.length) {
+        t.innerHTML = '<tr><td colspan="6" class="tbl-empty">0 clientes</td></tr>';
+        return;
+      }
+      t.innerHTML = list.map(c => {
+        const n = getCustomerNotes(c).notes || '';
+        const key = notesKey(c);
+        return `<tr>
+          <td><strong>${esc(c.name)}</strong>${n ? `<div class="tbl-prod-sub">${esc(n).slice(0, 70)}</div>` : ''}</td>
+          <td>${esc(c.phone || 'Sin teléfono')}</td>
+          <td>${c.orders || 0}</td>
+          <td>${money(c.totalSpent || 0)}</td>
+          <td>${c.lastOrder ? formatDateTime(c.lastOrder) : '—'}</td>
+          <td><span class="badge ${c.segment === 'VIP' ? 'green' : 'gray'}">${esc(c.segment || 'Activo')}</span><br><button class="tbl-action" style="margin-top:.35rem" onclick="AuraRecommendations.openClientProfile('${attr(key)}')">Ficha</button></td>
+        </tr>`;
+      }).join('');
+    };
+    Dash.__auraClientPatch = true;
+  }
+
+  function patchDashNav() {
+    if (!window.App || App.__auraSugNavPatch) return;
+    const original = App.dashNav?.bind(App);
+    App.dashNav = function(btn, section) {
+      if (section !== 'sugerencias-admin') {
+        const custom = document.getElementById('sec-sugerencias-admin');
+        if (custom) custom.style.display = 'none';
+        if (original) return original(btn, section);
+      }
+      document.querySelectorAll('.dash-nav-item').forEach(b => b.classList.remove('active'));
+      if (btn) btn.classList.add('active');
+      ['panel','inventario','pedidos','clientes','analiticas','config'].forEach(s => {
+        const el = document.getElementById('sec-' + s);
+        if (el) el.style.display = 'none';
+      });
+      const sec = document.getElementById('sec-sugerencias-admin');
+      if (sec) sec.style.display = '';
+      renderAdmin();
+    };
+    App.__auraSugNavPatch = true;
+  }
+
+  function bootAddon() {
+    normalizeTubitoPromo();
+    ensureSuggestionsSection();
+    injectInventoryButton();
+    ensureManualSaleModal();
+    ensureClientProfileModal();
+    patchOrdersTable();
+    patchClientTable();
+    patchDashNav();
+    try { Dash.renderClientes?.(); } catch (e) {}
+    try { Dash.updatePanelKPIs?.(); } catch (e) {}
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', bootAddon, { once: true });
+  } else {
+    bootAddon();
+  }
+})();
+</script>
+
+</body>
 
 </html>
