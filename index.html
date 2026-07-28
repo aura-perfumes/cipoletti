@@ -10584,6 +10584,7 @@ body {
             onclick="document.getElementById('s-store').scrollTo({top:document.getElementById('product-grid').offsetTop-80,behavior:'smooth'})">Ver
             colección</button>
           <button class="btn-hero-secondary" onclick="App.openNosotros()">Nosotros</button>
+          <button class="btn-hero-secondary hero-wholesale-cta" type="button" onclick="App.show('s-mayoristas')">Quiero revender</button>
         </div>
       </div>
     </div>
@@ -10632,6 +10633,12 @@ body {
           <span class="aura-dock-label">Inicio</span>
           <span class="aura-dock-icon" aria-hidden="true">
             <svg viewBox="0 0 24 24"><path d="M3 9.5 12 3l9 6.5V20a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V9.5z"/><path d="M9 21v-9h6v9"/></svg>
+          </span>
+        </button>
+        <button class="aura-dock-item aura-dock-wholesale" id="aura-dock-wholesale" type="button" onclick="App.show('s-mayoristas')" aria-label="Mayoristas">
+          <span class="aura-dock-label">Mayoristas</span>
+          <span class="aura-dock-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
           </span>
         </button>
         <button class="aura-dock-item" id="aura-dock-collection" type="button" onclick="AuraDock.goCollection()" aria-label="Bolsa">
@@ -20118,6 +20125,189 @@ const SugCenter = (() => {
 })();
 </script>
 
+  <!-- ══ AURA MAYORISTAS / REVENDEDORES ═══════════════════════════════ -->
+  <style id="aura-wholesale-css">
+    #s-mayoristas { overflow-y:auto; background:radial-gradient(circle at 18% 8%,rgba(201,168,76,.17),transparent 25%),linear-gradient(145deg,#07152d,#020915 62%,#0a1730); color:#f8f4ea; }
+    .wholesale-shell { width:min(1080px,92vw); margin:0 auto; padding:clamp(2rem,5vw,5rem) 0; }
+    .wholesale-back { border:0; background:none; color:rgba(255,255,255,.7); padding:0; cursor:pointer; font:600 .72rem Montserrat,sans-serif; letter-spacing:.08em; text-transform:uppercase; }
+    .wholesale-hero { text-align:center; padding:clamp(2.5rem,7vw,6rem) 1rem 3rem; }
+    .wholesale-eyebrow { color:#dcb95d; font:700 .66rem Montserrat,sans-serif; letter-spacing:.22em; text-transform:uppercase; }
+    .wholesale-title { margin:.8rem 0 .5rem; font:500 clamp(2.6rem,7vw,5.5rem)/.9 "Cormorant Garamond",Georgia,serif; letter-spacing:-.035em; }
+    .wholesale-sub { margin:0; color:#dcb95d; font:600 clamp(.9rem,2vw,1.15rem) Montserrat,sans-serif; letter-spacing:.08em; }
+    .wholesale-benefits { display:grid; grid-template-columns:repeat(4,1fr); gap:1rem; margin-bottom:clamp(2rem,5vw,4rem); }
+    .wholesale-benefit { min-height:178px; padding:1.35rem; border:1px solid rgba(220,185,93,.31); border-radius:18px; background:linear-gradient(145deg,rgba(255,255,255,.085),rgba(255,255,255,.025)); box-shadow:inset 0 1px rgba(255,255,255,.08); }
+    .wholesale-benefit-icon { display:flex; align-items:center; justify-content:center; width:42px; height:42px; margin-bottom:1rem; border-radius:50%; background:rgba(220,185,93,.14); color:#f1cf76; font-size:1.25rem; }
+    .wholesale-benefit h3 { margin:0 0 .5rem; font:600 1.1rem "Cormorant Garamond",Georgia,serif; color:#fff7df; }
+    .wholesale-benefit p { margin:0; color:rgba(255,255,255,.66); font:400 .76rem/1.55 Montserrat,sans-serif; }
+    .wholesale-form-card { max-width:760px; margin:0 auto; padding:clamp(1.35rem,4vw,2.7rem); border:1px solid rgba(220,185,93,.4); border-radius:22px; background:linear-gradient(145deg,rgba(20,39,73,.88),rgba(5,15,31,.96)); box-shadow:0 22px 60px rgba(0,0,0,.25); }
+    .wholesale-form-card h2 { margin:0 0 .35rem; color:#fff7df; font:500 clamp(1.8rem,4vw,2.65rem) "Cormorant Garamond",Georgia,serif; }
+    .wholesale-form-card > p { margin:0 0 1.6rem; color:rgba(255,255,255,.62); font:.76rem/1.55 Montserrat,sans-serif; }
+    .wholesale-form-grid { display:grid; grid-template-columns:1fr 1fr; gap:1rem; }
+    .wholesale-form-card label { display:block; margin-bottom:.42rem; color:#f5e5af; font:600 .63rem Montserrat,sans-serif; letter-spacing:.08em; text-transform:uppercase; }
+    .wholesale-form-card input,.wholesale-form-card textarea { box-sizing:border-box; width:100%; border:1px solid rgba(255,255,255,.17); border-radius:10px; padding:.78rem .85rem; background:rgba(0,0,0,.17); color:#fff; outline:0; font:.82rem Montserrat,sans-serif; }
+    .wholesale-form-card input:focus,.wholesale-form-card textarea:focus { border-color:#dcb95d; box-shadow:0 0 0 3px rgba(220,185,93,.12); }
+    .wholesale-form-card textarea { min-height:100px; resize:vertical; }
+    .wholesale-full { grid-column:1/-1; }
+    .wholesale-submit { width:100%; margin-top:1.2rem; padding:.95rem 1rem; border:0; border-radius:10px; cursor:pointer; background:linear-gradient(115deg,#b8872f,#f2d57f,#b8872f); color:#10192b; font:800 .73rem Montserrat,sans-serif; letter-spacing:.1em; text-transform:uppercase; }
+    .wholesale-store-link { color:#dcb95d !important; }
+    .hero-wholesale-cta { border-color:rgba(220,185,93,.72) !important; color:#f1d37e !important; }
+    .aura-dock-item.aura-dock-wholesale { border-color:rgba(220,185,93,.62) !important; color:#efcf76 !important; background:rgba(201,168,76,.13) !important; }
+    .badge.gold { background:rgba(201,168,76,.16); color:#9a6e16; border:1px solid rgba(201,168,76,.3); }
+    .wholesale-status-select { min-width:116px; padding:.42rem .5rem; border:1px solid #d7dee8; border-radius:8px; background:#fff; color:#334155; font-size:.72rem; }
+    @media (max-width:760px) { .wholesale-benefits { grid-template-columns:1fr 1fr; } }
+    @media (max-width:520px) { .wholesale-shell { width:min(92vw,440px); } .wholesale-benefits,.wholesale-form-grid { grid-template-columns:1fr; } .wholesale-full { grid-column:auto; } .wholesale-benefit { min-height:0; } }
+  </style>
+
+  <div id="s-mayoristas" class="screen" style="flex-direction:column">
+    <div class="wholesale-shell">
+      <button class="wholesale-back" type="button" onclick="App.show('s-store')">← Volver a la tienda</button>
+      <section class="wholesale-hero">
+        <div class="wholesale-eyebrow">AURA · Comunidad comercial</div>
+        <h1 class="wholesale-title">Grupo exclusivo<br>para revendedores</h1>
+        <p class="wholesale-sub">Sé parte. Crecé. Ganá más.</p>
+      </section>
+      <section class="wholesale-benefits" aria-label="Beneficios para revendedores">
+        <article class="wholesale-benefit"><div class="wholesale-benefit-icon">✦</div><h3>Novedades antes que nadie</h3><p>Conocé los ingresos y lanzamientos antes de que lleguen a la tienda.</p></article>
+        <article class="wholesale-benefit"><div class="wholesale-benefit-icon">%</div><h3>Descuentos exclusivos</h3><p>Accedé a precios y promociones pensadas para hacer crecer tu margen.</p></article>
+        <article class="wholesale-benefit"><div class="wholesale-benefit-icon">↗</div><h3>Tips y asesoramiento</h3><p>Ideas concretas para vender más y atender mejor a cada cliente.</p></article>
+        <article class="wholesale-benefit"><div class="wholesale-benefit-icon">◈</div><h3>Más ingresos, mejor servicio</h3><p>Sumá una línea atractiva a tu negocio con respaldo de AURA.</p></article>
+      </section>
+      <form class="wholesale-form-card" id="wholesale-form" onsubmit="Wholesale.submit(event)">
+        <h2>Postulación para mayoristas</h2>
+        <p>Dejá tus datos. Vamos a revisar la solicitud y contactarte por WhatsApp.</p>
+        <div class="wholesale-form-grid">
+          <div><label for="wh-name">Nombre y apellido *</label><input id="wh-name" required autocomplete="name" placeholder="Tu nombre completo"></div>
+          <div><label for="wh-phone">WhatsApp / teléfono *</label><input id="wh-phone" required inputmode="tel" autocomplete="tel" placeholder="Ej. 299 123 4567"></div>
+          <div><label for="wh-instagram">Instagram o red social</label><input id="wh-instagram" placeholder="@tuusuario"></div>
+          <div><label for="wh-city">Ciudad / zona</label><input id="wh-city" autocomplete="address-level2" placeholder="Ej. Cipolletti"></div>
+          <div class="wholesale-full"><label for="wh-message">¿Por qué querés sumarte?</label><textarea id="wh-message" placeholder="Contanos brevemente sobre tu proyecto."></textarea></div>
+        </div>
+        <button class="wholesale-submit" type="submit">Enviar postulación por WhatsApp</button>
+      </form>
+    </div>
+  </div>
+
+  <script id="aura-wholesale-js">
+  (() => {
+    const DEFAULT_TEMPLATE = '🤝 Nueva solicitud para el grupo de Mayoristas\n\nNombre: {nombre}\nWhatsApp: {telefono}\nInstagram: {instagram}\nZona: {ciudad}\nMensaje: {mensaje}';
+    window.WHOLESALE_REQUESTS = Array.isArray(window.WHOLESALE_REQUESTS) ? window.WHOLESALE_REQUESTS : (safeParse('aura_wholesale_requests', []) || []);
+
+    function syncWholesaleRequests() {
+      try { localStorage.setItem('aura_wholesale_requests', JSON.stringify(WHOLESALE_REQUESTS)); } catch (error) {}
+      try {
+        if (window.rtdb || (typeof rtdb !== 'undefined' && rtdb)) {
+          const db = window.rtdb || rtdb;
+          db.ref('aura_sync/wholesaleRequests').set({ value: WHOLESALE_REQUESTS, updatedAt: new Date().toISOString(), source: window.__syncClientId || 'aura-web' }).catch(error => console.warn('No se pudo sincronizar wholesaleRequests', error));
+        }
+      } catch (error) { console.warn('No se pudo sincronizar wholesaleRequests', error); }
+    }
+    window.saveWholesaleRequestsLS = syncWholesaleRequests;
+
+    function readRemoteWholesaleRequests() {
+      try {
+        const db = window.rtdb || (typeof rtdb !== 'undefined' && rtdb);
+        if (!db) return;
+        const ref = db.ref('aura_sync/wholesaleRequests');
+        ref.once('value').then(snap => {
+          if (snap.exists() && Array.isArray(snap.val()?.value)) {
+            const remote = snap.val().value;
+            if (JSON.stringify(remote) !== JSON.stringify(WHOLESALE_REQUESTS)) { WHOLESALE_REQUESTS = remote; Dash.renderWholesaleRequests?.(); Dash.updatePanelKPIs?.(); }
+          } else if (WHOLESALE_REQUESTS.length) syncWholesaleRequests();
+        }).catch(() => {});
+        ref.on('value', snap => {
+          const remote = snap.val()?.value;
+          if (Array.isArray(remote) && JSON.stringify(remote) !== JSON.stringify(WHOLESALE_REQUESTS)) { WHOLESALE_REQUESTS = remote; Dash.renderWholesaleRequests?.(); Dash.updatePanelKPIs?.(); }
+        });
+      } catch (error) {}
+    }
+
+    function esc(value) { return typeof escapeHtml === 'function' ? escapeHtml(String(value ?? '')) : String(value ?? '').replace(/[&<>"']/g, char => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;' })[char]); }
+    function normalizedPhone(value) { return String(value || '').replace(/\D/g, ''); }
+    function template() { return STORE.wholesaleWaTemplate || DEFAULT_TEMPLATE; }
+    function statusBadge(status) { return status === 'Aprobado' ? 'gold' : status === 'Rechazado' ? 'red' : status === 'Contactado' ? 'green' : 'yellow'; }
+    function addWholesaleCustomer(request) {
+      const phone = normalizedPhone(request.phone);
+      const index = CUSTOMERS.findIndex(customer => normalizedPhone(customer.phone) === phone && phone || String(customer.name || '').toLowerCase() === String(request.name || '').toLowerCase());
+      const customer = { name: request.name, phone: request.phone, orders: 0, totalSpent: 0, lastOrder: request.date, segment: 'Mayorista', instagram: request.instagram || '', city: request.city || '' };
+      if (index >= 0) CUSTOMERS[index] = { ...CUSTOMERS[index], ...customer, orders: CUSTOMERS[index].orders || 0, totalSpent: CUSTOMERS[index].totalSpent || 0 };
+      else CUSTOMERS.push(customer);
+      saveCustomersLS();
+    }
+
+    window.Wholesale = {
+      submit(event) {
+        event.preventDefault();
+        const name = document.getElementById('wh-name').value.trim();
+        const phone = document.getElementById('wh-phone').value.trim();
+        if (!name || !phone) { showToast('Completá nombre y WhatsApp.', true); return; }
+        const request = { id: 'MAY-' + Date.now().toString().slice(-6), name, phone, instagram: document.getElementById('wh-instagram').value.trim(), city: document.getElementById('wh-city').value.trim(), message: document.getElementById('wh-message').value.trim(), status: 'Pendiente', date: new Date().toISOString() };
+        WHOLESALE_REQUESTS.unshift(request);
+        syncWholesaleRequests();
+        Dash.renderWholesaleRequests?.();
+        Dash.updatePanelKPIs?.();
+        const data = { nombre: request.name, telefono: request.phone, instagram: request.instagram || 'No informado', ciudad: request.city || 'No informada', mensaje: request.message || 'Sin comentario' };
+        const message = typeof buildWhatsAppMessageFromTemplate === 'function' ? buildWhatsAppMessageFromTemplate(template(), data) : DEFAULT_TEMPLATE.replace(/\{(\w+)\}/g, (_, key) => data[key] || '');
+        window.open(`https://wa.me/${normalizedPhone(STORE.waNum)}?text=${encodeURIComponent(message)}`, '_blank', 'noopener,noreferrer');
+        event.currentTarget.reset();
+        showToast('¡Listo! Te vamos a contactar pronto ✓');
+      },
+      contact(id) { const request = WHOLESALE_REQUESTS.find(item => item.id === id); if (request) window.open(`https://wa.me/${normalizedPhone(request.phone)}`, '_blank', 'noopener,noreferrer'); },
+      setStatus(id, status) { const request = WHOLESALE_REQUESTS.find(item => item.id === id); if (!request) return; request.status = status; if (status === 'Aprobado') addWholesaleCustomer(request); syncWholesaleRequests(); Dash.renderWholesaleRequests?.(); Dash.renderClientes?.(); Dash.updatePanelKPIs?.(); },
+      remove(id) { if (!window.confirm('¿Eliminar esta solicitud?')) return; WHOLESALE_REQUESTS = WHOLESALE_REQUESTS.filter(item => item.id !== id); syncWholesaleRequests(); Dash.renderWholesaleRequests?.(); Dash.updatePanelKPIs?.(); }
+    };
+
+    Dash.renderWholesaleRequests = function() {
+      const tbody = document.getElementById('wholesale-tbody');
+      if (!tbody) return;
+      const query = (document.getElementById('wholesale-search')?.value || '').toLowerCase().trim();
+      const list = WHOLESALE_REQUESTS.filter(item => !query || [item.name,item.phone,item.instagram,item.city,item.status].join(' ').toLowerCase().includes(query));
+      if (!list.length) { tbody.innerHTML = '<tr><td colspan="7" class="tbl-empty">No hay solicitudes registradas.</td></tr>'; return; }
+      tbody.innerHTML = list.map(item => `<tr><td><strong>${esc(item.name)}</strong>${item.message ? `<div class="tbl-prod-sub">${esc(item.message).slice(0,80)}</div>` : ''}</td><td>${esc(item.phone)}</td><td>${esc(item.instagram || '—')}</td><td>${esc(item.city || '—')}</td><td>${item.date ? formatDateTime(item.date) : '—'}</td><td><span class="badge ${statusBadge(item.status)}">${esc(item.status)}</span></td><td><button class="tbl-action" onclick="Wholesale.contact('${item.id}')">WhatsApp</button><select class="wholesale-status-select" onchange="Wholesale.setStatus('${item.id}',this.value)" aria-label="Estado de solicitud"><option${item.status === 'Pendiente' ? ' selected' : ''}>Pendiente</option><option${item.status === 'Contactado' ? ' selected' : ''}>Contactado</option><option${item.status === 'Aprobado' ? ' selected' : ''}>Aprobado</option><option${item.status === 'Rechazado' ? ' selected' : ''}>Rechazado</option></select><button class="tbl-action del" onclick="Wholesale.remove('${item.id}')">Eliminar</button></td></tr>`).join('');
+    };
+    Dash.filterWholesaleRequests = function() { this.renderWholesaleRequests(); };
+
+    const formerUpdateKPIs = Dash.updatePanelKPIs.bind(Dash);
+    Dash.updatePanelKPIs = function() { const result = formerUpdateKPIs(); const pending = WHOLESALE_REQUESTS.filter(item => item.status === 'Pendiente').length; const value = document.getElementById('kpi-wholesale-pending'); const sub = document.getElementById('kpi-wholesale-pending-sub'); if (value) value.textContent = pending; if (sub) sub.textContent = pending === 1 ? '1 solicitud por revisar' : `${pending} solicitudes por revisar`; return result; };
+
+    function buildAdminSection() {
+      const main = document.getElementById('dash-main');
+      if (!main || document.getElementById('sec-mayoristas')) return;
+      const section = document.createElement('div');
+      section.id = 'sec-mayoristas'; section.style.display = 'none';
+      section.innerHTML = `<div class="dash-topbar"><div><button class="dash-back" onclick="App.show('s-portal')">← Volver al portal</button><h1 class="dash-page-title display">Mayoristas</h1><p class="dash-page-sub">Solicitudes para el grupo de revendedores.</p></div></div><div class="section-card"><div class="section-card-hdr"><span class="section-card-title display">Postulaciones</span><div class="sc-search"><span class="sc-search-icon">🔍</span><input type="text" placeholder="Buscar solicitud..." oninput="Dash.filterWholesaleRequests()" id="wholesale-search"></div></div><div class="table-wrap"><table class="data-table"><thead><tr><th>Nombre</th><th>WhatsApp</th><th>Instagram</th><th>Zona</th><th>Fecha</th><th>Estado</th><th>Acciones</th></tr></thead><tbody id="wholesale-tbody"></tbody></table></div></div>`;
+      main.appendChild(section);
+      const nav = document.querySelector('#s-dashboard .dash-nav');
+      if (nav && !document.getElementById('nav-mayoristas')) { const button = document.createElement('button'); button.id = 'nav-mayoristas'; button.className = 'dash-nav-item'; button.type = 'button'; button.setAttribute('onclick', "App.dashNav(this,'mayoristas')"); button.innerHTML = '<span class="nav-icon">🤝</span>Mayoristas'; const after = nav.querySelector("[onclick*=\"'clientes'\"]"); after ? after.insertAdjacentElement('afterend',button) : nav.appendChild(button); }
+      const grid = document.querySelector('#sec-panel .kpi-grid');
+      if (grid && !document.getElementById('kpi-wholesale-pending')) { const card = document.createElement('div'); card.className = 'kpi-card'; card.innerHTML = '<div class="kpi-label">Mayoristas pendientes</div><div class="kpi-value display" id="kpi-wholesale-pending">0</div><div class="kpi-sub" id="kpi-wholesale-pending-sub">Sin solicitudes pendientes</div>'; grid.appendChild(card); }
+      const config = document.getElementById('sec-config');
+      if (config && !document.getElementById('cfg-wholesale-template')) { const block = document.createElement('div'); block.className = 'config-section'; block.innerHTML = `<div class="config-section-title">🤝 WhatsApp mayoristas</div><div class="config-hint" style="margin-bottom:.7rem">Este texto se abre al enviar una postulación. Usá: {nombre}, {telefono}, {instagram}, {ciudad}, {mensaje}.</div><textarea class="config-input" id="cfg-wholesale-template" style="min-height:150px;resize:vertical"></textarea><button class="btn-dark" style="margin-top:.75rem" type="button" onclick="Wholesale.saveTemplate()">Guardar mensaje</button>`; config.appendChild(block); document.getElementById('cfg-wholesale-template').value = template(); }
+    }
+    Wholesale.saveTemplate = function() { const input = document.getElementById('cfg-wholesale-template'); STORE.wholesaleWaTemplate = input?.value.trim() || DEFAULT_TEMPLATE; saveStoreConfig(); showToast('Mensaje de mayoristas actualizado ✓'); };
+
+    function addStoreEntry() {
+      const nav = document.querySelector('#s-store .store-nav-links');
+      if (nav && !document.getElementById('nav-link-mayoristas')) { const button = document.createElement('button'); button.id = 'nav-link-mayoristas'; button.className = 'store-nav-link wholesale-store-link'; button.type = 'button'; button.textContent = 'Mayoristas'; button.onclick = () => App.show('s-mayoristas'); nav.appendChild(button); }
+      const hero = document.querySelector('#s-store .store-hero-inner');
+      if (hero && !document.getElementById('store-wholesale-link')) { const button = document.createElement('button'); button.id = 'store-wholesale-link'; button.className = 'store-nav-link wholesale-store-link'; button.type = 'button'; button.style.cssText = 'margin-top:1.1rem;border:1px solid rgba(201,168,76,.6);border-radius:99px;padding:.68rem 1rem;background:rgba(5,13,29,.25)'; button.textContent = '¿Querés revender nuestros productos?'; button.onclick = () => App.show('s-mayoristas'); hero.appendChild(button); }
+    }
+
+    function patchNavigation() {
+      if (App.__wholesaleNavPatch) return;
+      const previous = App.dashNav.bind(App);
+      App.dashNav = function(button, section) {
+        if (section !== 'mayoristas') { const custom = document.getElementById('sec-mayoristas'); if (custom) custom.style.display = 'none'; return previous(button, section); }
+        document.querySelectorAll('.dash-nav-item').forEach(item => item.classList.remove('active'));
+        if (button) button.classList.add('active');
+        document.querySelectorAll('#dash-main > div[id^="sec-"]').forEach(item => item.style.display = 'none');
+        const custom = document.getElementById('sec-mayoristas'); if (custom) custom.style.display = ''; Dash.renderWholesaleRequests();
+      };
+      App.__wholesaleNavPatch = true;
+    }
+    const init = () => { buildAdminSection(); addStoreEntry(); patchNavigation(); readRemoteWholesaleRequests(); Dash.updatePanelKPIs(); };
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init, { once:true }); else init();
+  })();
+  </script>
 </body>
 
 </html>
