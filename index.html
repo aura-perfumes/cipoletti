@@ -18836,6 +18836,9 @@ const SugCenter = (() => {
   #store-search-autocomplete.open {
     display: block;
   }
+  #store-search-autocomplete {
+    z-index: 9500;
+  }
   @media(max-width: 760px) {
     .ventas-filters { grid-template-columns: 1fr; }
     .ventas-detail-grid { grid-template-columns: 1fr; }
@@ -19543,10 +19546,23 @@ const SugCenter = (() => {
       </div>`).join('') : '<div class="aura-muted-mini">Sin productos con stock para ese criterio.</div>';
   }
 
+  const AURA_FIXED_AC_BOXES = { 'store-search-autocomplete': true };
+
+  function positionFixedAutocomplete(box, input) {
+    if (!box || !input) return;
+    const rect = input.getBoundingClientRect();
+    box.style.position = 'fixed';
+    box.style.left = rect.left + 'px';
+    box.style.top = (rect.bottom + 6) + 'px';
+    box.style.width = rect.width + 'px';
+    box.style.right = 'auto';
+  }
+
   function ensureAutocompleteBox(input, id) {
     if (!input) return null;
+    const useFixed = !!AURA_FIXED_AC_BOXES[id];
     let parent = input.parentElement;
-    if (parent && !parent.classList.contains('aura-flex-ac-wrap')) {
+    if (!useFixed && parent && !parent.classList.contains('aura-flex-ac-wrap')) {
       parent.classList.add('aura-flex-ac-wrap');
     }
     let box = document.getElementById(id);
@@ -19554,8 +19570,17 @@ const SugCenter = (() => {
       box = document.createElement('div');
       box.id = id;
       box.className = 'aura-flex-autocomplete';
-      input.insertAdjacentElement('afterend', box);
+      if (useFixed) {
+        document.body.appendChild(box);
+        box.dataset.fixedFor = id;
+        const reposition = () => { if (box.classList.contains('open')) positionFixedAutocomplete(box, input); };
+        window.addEventListener('scroll', reposition, true);
+        window.addEventListener('resize', reposition);
+      } else {
+        input.insertAdjacentElement('afterend', box);
+      }
     }
+    if (useFixed) positionFixedAutocomplete(box, input);
     return box;
   }
 
@@ -19580,6 +19605,7 @@ const SugCenter = (() => {
         <span class="aura-flex-option-badge">Elegir</span>
       </button>`).join('');
     box.classList.add('open');
+    if (AURA_FIXED_AC_BOXES[boxId]) positionFixedAutocomplete(box, input);
     box.querySelectorAll('.aura-flex-option').forEach(btn => {
       btn.addEventListener('mousedown', event => event.preventDefault());
       btn.addEventListener('click', () => {
