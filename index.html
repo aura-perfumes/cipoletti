@@ -9824,6 +9824,16 @@ body {
     flex: 0 0 auto !important;
   }
 }
+
+/* Search results must appear as soon as the catalog is filtered. */
+#product-grid .prod-card.aura-reveal,
+#product-grid .prod-card.aura-product-enter,
+#product-grid.aura-products-animating .prod-card {
+  opacity: 1 !important;
+  transform: none !important;
+  transition: none !important;
+  animation: none !important;
+}
 </style>
 </head>
 
@@ -11487,7 +11497,7 @@ body {
       _promoToastTimer = setTimeout(() => toast.classList.remove('visible'), 7000);
     }
 
-    let revenueChart = null, analLineChart = null, analDonutChart = null, currentFilter = 'todos', currentSearch = '', invStatusFilter = 'todos', invTextFilter = '';
+    let revenueChart = null, analLineChart = null, analDonutChart = null, currentFilter = 'todos', currentSearch = '', currentSearchResults = null, invStatusFilter = 'todos', invTextFilter = '';
     function getRevenueSeries() { if (ORDERS.length) { const byMonth = {}; ORDERS.forEach(o => { const d = new Date(o.date); const k = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`; byMonth[k] = (byMonth[k] || 0) + o.total }); const keys = Object.keys(byMonth).sort(); return { labels: keys.map(k => { const [y, m] = k.split('-'); return new Date(Number(y), Number(m) - 1, 1).toLocaleDateString('es-AR', { month: 'short' }) }), data: keys.map(k => byMonth[k]) } } return { labels: ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun'], data: [800, 950, 1100, 980, 1350, 1200] } }
     async function initChart(period = 'Semanal') { try { await ExternalScripts.load('https://cdn.jsdelivr.net/npm/chart.js', 'Chart'); } catch (error) { console.error(error); return; } const ctx = document.getElementById('revenue-chart'); if (!ctx) return; let d; if (period === 'Semanal') { const last7 = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom']; const totals = [0, 0, 0, 0, 0, 0, 0]; ORDERS.forEach(o => { const day = (new Date(o.date).getDay() + 6) % 7; totals[day] += o.total }); d = { labels: last7, data: totals.some(Boolean) ? totals : [120, 180, 160, 220, 195, 285, 250] } } else if (period === 'Mensual') { d = getRevenueSeries() } else { const yearly = {}; ORDERS.forEach(o => { const y = new Date(o.date).getFullYear(); yearly[y] = (yearly[y] || 0) + o.total }); const years = Object.keys(yearly).sort(); d = { labels: years.length ? years : ['2021', '2022', '2023', '2024', '2025', '2026'], data: years.length ? years.map(y => yearly[y]) : [5000, 6200, 7800, 9100, 11000, 14500] } } if (revenueChart) revenueChart.destroy(); revenueChart = new Chart(ctx, { type: 'line', data: { labels: d.labels, datasets: [{ data: d.data, borderColor: '#10B981', backgroundColor: 'rgba(16,185,129,.08)', tension: .4, pointBackgroundColor: '#10B981', pointRadius: 4, fill: true }] }, options: { plugins: { legend: { display: false } }, scales: { x: { grid: { display: false }, ticks: { color: '#94a3b8', font: { size: 11 } } }, y: { grid: { color: 'rgba(0,0,0,.05)' }, ticks: { color: '#94a3b8', font: { size: 11 }, callback: v => '$' + Number(v).toLocaleString('es-AR') } } }, responsive: true, maintainAspectRatio: true } }) }
     function buildHeroTitle(title) { const words = String(title || '').trim().split(/\s+/).filter(Boolean); if (!words.length) return 'AURA'; const last = words.pop(); return `${escapeHtml(words.join(' '))}${words.length ? '<br>' : ''}<em>${escapeHtml(last)}</em>` }
@@ -11680,10 +11690,10 @@ body {
       return false;
     }
 
-    function renderProducts() {
+    function renderProducts(options = {}) {
       const grid = document.getElementById('product-grid');
       if (!grid) return;
-      renderStoreFilters();
+      if (!options.skipFilters) renderStoreFilters();
       const label = document.getElementById('store-products-label');
 
       if (currentFilter === 'promos') {
@@ -11723,14 +11733,20 @@ body {
         return;
       }
 
-      let list = PRODUCTS.filter(p => {
-        const qNorm = normalizeStoreSearchText(currentSearch);
-        const qCompact = qNorm.replace(/\s+/g, '');
-        const matchesFilter = currentFilter === 'todos' || p.cat === currentFilter || p.cat2 === currentFilter;
-        const hayNorm = normalizeStoreSearchText([p.name, p.desc, p.size, getCategoryName(p.cat), getSubcategoryName(p.cat2)].join(' '));
-        const hayCompact = hayNorm.replace(/\s+/g, '');
-        return matchesFilter && (!qNorm || hayNorm.includes(qNorm) || hayCompact.includes(qCompact) || storeSearchLooseMatch(hayCompact, qCompact) || storeSearchFuzzyMatch(hayNorm, qNorm));
-      });
+      const qNorm = normalizeStoreSearchText(currentSearch);
+      const qCompact = qNorm.replace(/\s+/g, '');
+      const matchesCurrentFilter = p => currentFilter === 'todos' || p.cat === currentFilter || p.cat2 === currentFilter;
+      let list;
+      if (Array.isArray(currentSearchResults)) {
+        // Cards use the very same ranked products shown in the autocomplete.
+        list = currentSearchResults.filter(matchesCurrentFilter);
+      } else {
+        list = PRODUCTS.filter(p => {
+          const hayNorm = normalizeStoreSearchText([p.name, p.desc, p.size, getCategoryName(p.cat), getSubcategoryName(p.cat2)].join(' '));
+          const hayCompact = hayNorm.replace(/\s+/g, '');
+          return matchesCurrentFilter(p) && (!qNorm || hayNorm.includes(qNorm) || hayCompact.includes(qCompact) || storeSearchLooseMatch(hayCompact, qCompact));
+        });
+      }
 
       if (label) {
         const cat = currentFilter === 'todos' ? 'Colección completa' : TAXONOMY.categories.find(c => c.id === currentFilter)?.name || 'Colección';
@@ -12196,7 +12212,7 @@ renderConfigWAPreview();
       dashNav(btn, section) { document.querySelectorAll('.dash-nav-item').forEach(b => b.classList.remove('active')); if (btn) btn.classList.add('active');['panel', 'inventario', 'pedidos', 'clientes', 'analiticas', 'config'].forEach(s => { const el = document.getElementById('sec-' + s); if (el) el.style.display = s === section ? '' : 'none' }); if (section === 'inventario') Dash.renderInventory(); else if (section === 'pedidos') Dash.renderPedidos(); else if (section === 'clientes') Dash.renderClientes(); else if (section === 'analiticas') setTimeout(() => Dash.initAnalytics(), 80); else if (section === 'config') setTimeout(() => { Dash.renderTaxonomy(); window.PromoAdmin?.render(); Dash.initConfigTabs(); }, 50) },
       chartPeriod(p, btn) { document.querySelectorAll('.chart-tab').forEach(b => b.classList.remove('active')); btn.classList.add('active'); initChart(p) },
       filter(btn) { document.querySelectorAll('.chip').forEach(c => c.classList.remove('active')); btn.classList.add('active'); currentFilter = btn.dataset.cat; trackZone('filters'); renderProducts() },
-      search(q) { currentSearch = q; clearTimeout(this._searchTimer); this._searchTimer = setTimeout(renderProducts, 80) },
+      search(q) { currentSearch = q; currentSearchResults = q && window.AuraFindProductsFlexible ? window.AuraFindProductsFlexible(q) : null; renderProducts({ skipFilters: true }) },
       openNosotros() { document.getElementById('nosotros-modal').classList.add('active'); trackZone('about') },
       closeNosotros() { document.getElementById('nosotros-modal').classList.remove('active') },
       openProductDetail(id) { const p = PRODUCTS.find(x => x.id === id); if (!p) return; document.getElementById('detail-meta').textContent = `${getCategoryName(p.cat)} / ${getSubcategoryName(p.cat2)}`; document.getElementById('detail-name').textContent = p.name; document.getElementById('detail-price').textContent = '$' + p.price.toLocaleString('es-AR'); document.getElementById('detail-desc').textContent = p.desc || 'Fragancia destacada de AURA.'; document.getElementById('detail-size').textContent = p.size || '35 ml · EDP'; const main = document.getElementById('detail-main-img'); const thumbs = document.getElementById('detail-thumbs'); const imgs = (p.images && p.images.length ? p.images : [null]).slice(0, 2); const setMain = (src) => { if (src) { main.innerHTML = `<img src="${src}" alt="${escapeHtml(p.name)}" loading="eager" fetchpriority="high"/>` } else { main.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;width:100%;height:100%;opacity:.55">${PERFUME_SVG}</div>` } }; setMain(imgs[0]); thumbs.innerHTML = imgs.map((src, idx) => `<button class="detail-thumb ${idx === 0 ? 'active' : ''}" onclick="App.setDetailImage('${p.id}',${idx})">${src ? `<img src="${src}" alt="${escapeHtml(p.name)}">` : PERFUME_SVG}</button>`).join(''); document.getElementById('detail-add-btn').onclick = () => { Cart.addItem(p); this.closeProductDetail() }; document.getElementById('detail-modal').dataset.pid = id; document.getElementById('detail-modal').classList.add('active'); trackZone('productCard') },
@@ -19042,6 +19058,9 @@ const SugCenter = (() => {
       .sort((a, b) => b.score - a.score || String(a.product.name || '').localeCompare(String(b.product.name || ''), 'es'))
       .map(row => row.product);
   }
+  // Shared by the store search so the dropdown and the visible cards always
+  // use the identical matching and ranking logic.
+  window.AuraFindProductsFlexible = findProductsFlexible;
 
   function getOrderItems(order) {
     return Array.isArray(order && order.items) ? order.items : [];
