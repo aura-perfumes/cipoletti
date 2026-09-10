@@ -10992,48 +10992,28 @@ body {
       return PROMOS_DATA.filter(p => p.active !== false);
     }
 
-    function getSortedPromoTiers(promo) {
-      if (!promo || !Array.isArray(promo.tiers)) return [];
-      return promo.tiers
-        .map(t => {
-          const tierQty = Math.max(1, Number(t?.qty || 0));
-          const explicitUnitPrice = Number(t?.unitPrice || 0);
-          const tierTotal = Number(t?.total || 0);
-          const unitPrice = explicitUnitPrice > 0 ? explicitUnitPrice : (tierTotal > 0 ? tierTotal / tierQty : 0);
-          return { ...t, qty: tierQty, unitPrice, total: tierTotal > 0 ? tierTotal : unitPrice * tierQty };
-        })
-        .filter(t => Number.isFinite(t.qty) && t.qty > 0 && Number.isFinite(t.unitPrice) && t.unitPrice >= 0)
-        .sort((a, b) => a.qty - b.qty);
-    }
-
     function getPromoTier(promo, qty) {
-      qty = Math.floor(Number(qty || 0));
-      if (!promo || qty <= 0) return null;
-      const tiers = getSortedPromoTiers(promo);
-      if (!tiers.length) return null;
-      const threshold = [...tiers].reverse().find(t => t.qty <= qty);
-      if (!threshold || threshold.unitPrice <= 0) return null;
-      const total = threshold.unitPrice * qty;
-      return {
-        ...threshold,
-        thresholdQty: threshold.qty,
-        qty,
-        total,
-        label: `${qty}x $${total.toLocaleString('es-AR')} ($${threshold.unitPrice.toLocaleString('es-AR')} c/u)`
-      };
+      qty = Number(qty || 0);
+      if (!promo || !qty) return null;
+      if (promo.id === 'promo-tubitos-arabes') {
+        if (qty >= 10) {
+          return { qty, unitPrice: 3000, total: qty * 3000, label: `${qty}x $${(qty * 3000).toLocaleString('es-AR')} ($3.000 c/u)` };
+        }
+        if (qty >= 4 && qty <= 9) {
+          return { qty, unitPrice: 7000, total: qty * 7000, label: `${qty}x $${(qty * 7000).toLocaleString('es-AR')} ($7.000 c/u)` };
+        }
+      }
+      const exact = (promo.tiers || []).find(t => Number(t.qty) === qty);
+      if (exact) return exact;
+      return null;
     }
 
-    function getPromoDiscount(promo, qty, eligibleSubtotal = null) {
+    function getPromoDiscount(promo, qty) {
       const tier = getPromoTier(promo, qty);
       if (!tier) return null;
-      const tiers = getSortedPromoTiers(promo);
-      const referenceUnitPrice = Number(promo?.referenceUnitPrice || tiers[0]?.unitPrice || 0);
-      const baseTotal = Number.isFinite(Number(eligibleSubtotal)) && Number(eligibleSubtotal) >= 0
-        ? Number(eligibleSubtotal)
-        : referenceUnitPrice * Number(qty || 0);
-      const saved = Math.max(0, baseTotal - tier.total);
-      const percent = baseTotal > 0 ? (saved / baseTotal) * 100 : 0;
-      return { tier, saved, percent, baseTotal };
+      const normalPrice = promo.tiers[0].unitPrice;
+      const saved = (normalPrice * qty) - tier.total;
+      return { tier, saved };
     }
 
     const DEFAULT_HEATMAP = { hero: 18, filters: 11, productCard: 25, addToCart: 20, cart: 8, whatsapp: 7, nav: 6, about: 4 };
@@ -11410,51 +11390,26 @@ body {
 
     function getCartActiveDiscounts(cartItems) {
       const items = Array.isArray(cartItems) ? cartItems : [];
+      let totalDiscount = 0;
+      const discountLines = [];
       if (!items.length || typeof getActivePromos !== 'function') {
-        return { totalDiscount: 0, discountLines: [] };
+        return { totalDiscount, discountLines };
       }
-
-      const candidates = [];
       for (const promo of getActivePromos()) {
         const promoItems = items.filter(item => {
-          if (!item || item._isPromo || Number(item.qty || 0) <= 0) return false;
+          if (!item || item._isPromo) return false;
           const product = Array.isArray(PRODUCTS) ? PRODUCTS.find(p => p.id === item.id) : null;
           return getAssignedPromoIds(product).includes(promo.id);
         });
-        const totalQtyForPromo = promoItems.reduce((sum, item) => sum + Math.max(0, Number(item.qty || 0)), 0);
-        if (totalQtyForPromo <= 0) continue;
-        const eligibleSubtotal = promoItems.reduce((sum, item) => sum + Math.max(0, Number(item.price || 0)) * Math.max(0, Number(item.qty || 0)), 0);
+        const totalQtyForPromo = promoItems.reduce((sum, item) => sum + Number(item.qty || 0), 0);
+        if (totalQtyForPromo === 0) continue;
         const discount = typeof getPromoDiscount === 'function'
-          ? getPromoDiscount(promo, totalQtyForPromo, eligibleSubtotal)
+          ? getPromoDiscount(promo, totalQtyForPromo)
           : null;
         if (discount && discount.saved > 0) {
-          candidates.push({
-            promo,
-            discount,
-            qtyMatched: totalQtyForPromo,
-            eligibleSubtotal,
-            itemKeys: new Set(promoItems.map(item => String(item.id)))
-          });
+          totalDiscount += Number(discount.saved || 0);
+          discountLines.push({ promo, discount, qtyMatched: totalQtyForPromo });
         }
-      }
-
-      // No acumulamos dos promociones sobre las mismas unidades. Si hay solapamiento,
-      // priorizamos la que produce mayor ahorro para evitar descuentos duplicados.
-      candidates.sort((a, b) => Number(b.discount.saved || 0) - Number(a.discount.saved || 0));
-      const usedItemKeys = new Set();
-      const discountLines = [];
-      let totalDiscount = 0;
-      for (const candidate of candidates) {
-        const overlaps = [...candidate.itemKeys].some(key => usedItemKeys.has(key));
-        if (overlaps) continue;
-        candidate.itemKeys.forEach(key => usedItemKeys.add(key));
-        totalDiscount += Number(candidate.discount.saved || 0);
-        discountLines.push({
-          promo: candidate.promo,
-          discount: candidate.discount,
-          qtyMatched: candidate.qtyMatched,
-          eligibleSubtotal: candidate.eligibleSubtotal
-        });
       }
       return { totalDiscount, discountLines };
     }
@@ -11728,9 +11683,8 @@ body {
           label.style.display = promos.length ? '' : 'none';
         }
         grid.innerHTML = promos.length ? promos.map(promo => {
-          const sortedTiers = getSortedPromoTiers(promo);
-          const firstTier = sortedTiers[0] || { unitPrice: 0 };
-          const tiersPreview = sortedTiers.slice(0, 3).map(t => t.label || `Desde ${t.qty}: $${Number(t.unitPrice || 0).toLocaleString('es-AR')} c/u`).join('<br>');
+          const firstTier = promo.tiers[0];
+          const tiersPreview = promo.tiers.slice(0, 3).map(t => t.label).join('<br>');
           return `<div class="prod-card promo-card" onclick="PromoModal.open('${promo.id}')">
             <div class="prod-thumb">
               ${promo.images?.[0]
@@ -14212,35 +14166,14 @@ const SugCenter = (() => {
     window.openInventoryForPromo = openInventoryForPromo;
 
     function normalizePromoDraft(promo){
-      const tiers = (Array.isArray(promo.tiers) ? promo.tiers : []).map(t => {
-        const qty = Math.max(1, Math.floor(Number(t?.qty || 0)));
-        const total = Math.max(0, Number(t?.total || 0));
-        const explicitUnitPrice = Math.max(0, Number(t?.unitPrice || 0));
-        const unitPrice = explicitUnitPrice > 0 ? explicitUnitPrice : (total > 0 ? total / qty : 0);
-        return { qty, unitPrice, total: total > 0 ? total : unitPrice * qty };
-      }).sort((a, b) => a.qty - b.qty);
       return {
         ...promo,
         coverImage: typeof promo.coverImage === 'string' ? promo.coverImage.trim() : (promo.images?.[0] || ''),
         images: (typeof promo.coverImage === 'string' && promo.coverImage.trim()) ? [promo.coverImage.trim()] : (Array.isArray(promo.images) ? promo.images.filter(Boolean) : []),
         sizeMatch: typeof promo.sizeMatch === 'string' ? promo.sizeMatch.trim() : '',
-        tiers: tiers.length ? tiers : [{qty:1,unitPrice:0,total:0}],
+        tiers: Array.isArray(promo.tiers) ? promo.tiers.map(t => ({ qty: Math.max(1, Number(t.qty||0)), total: Math.max(0, Number(t.total||0)) })) : [{qty:1,total:0}],
         active: promo.active !== false
       };
-    }
-
-    function validatePromoDraft(promo){
-      const tiers = getSortedPromoTiers(promo);
-      if (!tiers.length) return 'Debe existir al menos un tier válido.';
-      const qtys = tiers.map(t => t.qty);
-      if (new Set(qtys).size !== qtys.length) return 'No puede haber dos tiers con la misma cantidad mínima.';
-      if (tiers.some(t => t.unitPrice <= 0)) return 'Todos los tiers deben tener un precio mayor a $0.';
-      for (let i = 1; i < tiers.length; i++) {
-        if (tiers[i].unitPrice > tiers[i - 1].unitPrice) {
-          return `El precio por unidad del tier de ${tiers[i].qty} unidades no puede ser mayor al tier anterior.`;
-        }
-      }
-      return '';
     }
 
     PromoAdmin.render = function(){
@@ -14292,7 +14225,7 @@ const SugCenter = (() => {
                 <div class="config-hint" style="margin-top:.35rem">Los productos se asignan desde cada ficha de perfume. Esta promo ya no administra fragancias desde acá.</div>
               </div>
             </div>
-            <label class="config-label" style="margin-top:.9rem;display:block">Escalas de precio</label><div class="config-hint">Cada fila significa: a partir de esta cantidad, se usa este precio por unidad. El total ingresado se convierte automáticamente a precio unitario.</div>
+            <label class="config-label" style="margin-top:.9rem;display:block">Tiers</label>
             <div class="promo-tiers-admin" id="promo-tiers-${promo.id}">${(promo.tiers||[]).map((tier,index) => `<div class="promo-tier-row"><div><label class="config-label">Cantidad mínima</label><input class="config-input" type="number" min="1" data-tier-qty value="${Number(tier.qty || 0)}" /></div><div><label class="config-label">Precio total</label><input class="config-input" type="number" min="0" step="1" data-tier-total value="${Number(tier.total || 0)}" /></div><button type="button" class="btn-outline" style="padding:.55rem 0;font-size:1rem;line-height:1;border-radius:10px" onclick="PromoAdmin.removeTier('${promo.id}', ${index})">×</button></div>`).join('')}</div>
             <div class="promo-tier-actions"><button type="button" class="btn-outline" style="border-radius:10px;padding:.5rem .9rem;font-size:.78rem" onclick="PromoAdmin.addTier('${promo.id}')">+ Agregar tier</button></div>
             <div style="display:flex;justify-content:flex-end;margin-top:1rem"><button type="button" class="btn-outline promo-delete-btn" style="border-radius:99px;padding:.55rem 1rem;font-size:.72rem" onclick="PromoAdmin.remove('${promo.id}')">Eliminar promo</button></div>
@@ -14301,7 +14234,7 @@ const SugCenter = (() => {
     };
 
     PromoAdmin.save = function(){
-      const drafts = PROMOS_DATA.map(promo => normalizePromoDraft({
+      PROMOS_DATA.splice(0, PROMOS_DATA.length, ...PROMOS_DATA.map(promo => normalizePromoDraft({
         ...promo,
         name: document.getElementById(`promo-name-${promo.id}`)?.value?.trim() || 'Nueva promo',
         note: document.getElementById(`promo-note-${promo.id}`)?.value?.trim() || '',
@@ -14309,15 +14242,7 @@ const SugCenter = (() => {
         coverImage: document.getElementById(`promo-img-${promo.id}`)?.value?.trim() || '',
         sizeMatch: document.getElementById(`promo-sizematch-${promo.id}`)?.value?.trim() || '',
         tiers: Array.from(document.querySelectorAll(`#promo-tiers-${promo.id} .promo-tier-row`)).map(row => ({ qty: row.querySelector('[data-tier-qty]')?.value, total: row.querySelector('[data-tier-total]')?.value }))
-      }));
-      for (const draft of drafts) {
-        const error = validatePromoDraft(draft);
-        if (error) {
-          showToast(`Promo "${draft.name}": ${error}`, true);
-          return;
-        }
-      }
-      PROMOS_DATA.splice(0, PROMOS_DATA.length, ...drafts);
+      })));
       savePromosLS();
       renderProducts();
       Dash.renderInventory?.();
@@ -14351,9 +14276,7 @@ const SugCenter = (() => {
     PromoAdmin.addTier = function(id){
       const promo = PROMOS_DATA.find(item => item.id === id); if (!promo) return;
       promo.tiers = Array.isArray(promo.tiers) ? promo.tiers : [];
-      const nextQty = promo.tiers.reduce((max, tier) => Math.max(max, Number(tier?.qty || 0)), 0) + 1;
-      const last = getSortedPromoTiers(promo).slice(-1)[0];
-      promo.tiers.push({ qty: nextQty, total: last ? last.unitPrice * nextQty : 0 });
+      promo.tiers.push({ qty: 1, total: 0 });
       PromoAdmin.render();
     };
 
@@ -14403,11 +14326,60 @@ const SugCenter = (() => {
 
   <script>
     (function(){
-      window.getAssignedPromoIds = getAssignedPromoIds;
+      window.getAssignedPromoIds = function(product) {
+        if (!product) return [];
+        const activePromos = typeof getActivePromos === 'function' ? getActivePromos() : [];
+        const activeIds = new Set(activePromos.map(p => p.id));
+        const manual = Array.isArray(product.promoAssignments)
+          ? [...new Set(product.promoAssignments)].filter(id => activeIds.has(id))
+          : [];
+        const productText = `${product.name || ''} ${product.size || ''}`.toLowerCase();
+        const autoMatched = activePromos
+          .filter(promo => {
+            if (!promo.sizeMatch || !promo.sizeMatch.trim()) return false;
+            return productText.includes(promo.sizeMatch.trim().toLowerCase());
+          })
+          .map(p => p.id);
+        return [...new Set([...manual, ...autoMatched])];
+      };
 
-      window.getCartActiveDiscounts = getCartActiveDiscounts;
+      window.getCartActiveDiscounts = function(cartItems) {
+        const items = Array.isArray(cartItems) ? cartItems : [];
+        let totalDiscount = 0;
+        const discountLines = [];
+        if (!items.length || typeof getActivePromos !== 'function') {
+          return { totalDiscount, discountLines };
+        }
+        for (const promo of getActivePromos()) {
+          const promoItems = items.filter(item => {
+            if (!item || item._isPromo) return false;
+            const product = Array.isArray(PRODUCTS) ? PRODUCTS.find(p => p.id === item.id) : null;
+            return window.getAssignedPromoIds(product).includes(promo.id);
+          });
+          const totalQtyForPromo = promoItems.reduce((sum, item) => sum + Number(item.qty || 0), 0);
+          if (totalQtyForPromo === 0) continue;
+          const discount = typeof getPromoDiscount === 'function'
+            ? getPromoDiscount(promo, totalQtyForPromo)
+            : null;
+          if (discount && discount.saved > 0) {
+            totalDiscount += Number(discount.saved || 0);
+            discountLines.push({ promo, discount, qtyMatched: totalQtyForPromo });
+          }
+        }
+        return { totalDiscount, discountLines };
+      };
 
-      window.getCartActiveDiscount = getCartActiveDiscount;
+      window.getCartActiveDiscount = function(cartItems){
+        const aggregated = window.getCartActiveDiscounts(cartItems);
+        if (!aggregated.discountLines.length) return null;
+        const first = aggregated.discountLines[0];
+        return {
+          promo: first.promo,
+          tier: first.discount.tier,
+          saved: first.discount.saved,
+          qty: first.discount.tier?.qty || 0
+        };
+      };
 
       window.checkPromoEligibilityForProduct = function(product){
         const promoIds = window.getAssignedPromoIds(product);
@@ -17833,19 +17805,20 @@ const SugCenter = (() => {
     try {
       const promo = (typeof PROMOS_DATA !== 'undefined' ? PROMOS_DATA : []).find(p => p.id === 'promo-tubitos-arabes');
       if (!promo) return;
-      promo.sizeMatch = String(promo.sizeMatch || '35ml').trim();
-      // Compatibilidad con instalaciones antiguas: solo crea tiers por defecto si la promo
-      // no tiene configuración guardada. Nunca vuelve a pisar lo editado desde el admin.
-      if (!Array.isArray(promo.tiers) || !promo.tiers.length) {
-        promo.tiers = [
-          { qty: 1, unitPrice: 8000, total: 8000 },
-          { qty: 2, unitPrice: 7500, total: 15000 },
-          { qty: 3, unitPrice: 7000, total: 21000 },
-          { qty: 4, unitPrice: 7000, total: 28000 },
-          { qty: 10, unitPrice: 3000, total: 30000 }
-        ];
-      }
-      promo.tiers = getSortedPromoTiers(promo);
+      promo.sizeMatch = '35ml';
+      promo.tiers = [
+        { qty: 1, unitPrice: 8000, total: 8000, label: '1x $8.000' },
+        { qty: 2, unitPrice: 7500, total: 15000, label: '2x $15.000 ($7.500 c/u)' },
+        { qty: 3, unitPrice: 7000, total: 21000, label: '3x $21.000 ($7.000 c/u)' },
+        { qty: 4, unitPrice: 7000, total: 28000, label: '4x $28.000 ($7.000 c/u)' },
+        { qty: 5, unitPrice: 7000, total: 35000, label: '5x $35.000 ($7.000 c/u)' },
+        { qty: 6, unitPrice: 7000, total: 42000, label: '6x $42.000 ($7.000 c/u)' },
+        { qty: 7, unitPrice: 7000, total: 49000, label: '7x $49.000 ($7.000 c/u)' },
+        { qty: 8, unitPrice: 7000, total: 56000, label: '8x $56.000 ($7.000 c/u)' },
+        { qty: 9, unitPrice: 7000, total: 63000, label: '9x $63.000 ($7.000 c/u)' },
+        { qty: 10, unitPrice: 3000, total: 30000, label: 'Desde 10 unidades: $3.000 c/u' }
+      ];
+      promo.note = 'Desde 4 hasta 9 unidades: $7.000 c/u. Desde 10 unidades: $3.000 c/u.';
       if (typeof LS !== 'undefined' && LS?.set) LS.set('promos', PROMOS_DATA);
       else writeJSON('aura_promos', PROMOS_DATA);
     } catch (error) {
@@ -17854,7 +17827,16 @@ const SugCenter = (() => {
   }
 
   try {
-    window.getPromoTier = getPromoTier;
+    window.getPromoTier = function(promo, qty) {
+      qty = Number(qty || 0);
+      if (!promo || !qty) return null;
+      if (promo.id === 'promo-tubitos-arabes') {
+        if (qty >= 10) return { qty, unitPrice: 3000, total: qty * 3000, label: `${qty}x ${money(qty * 3000)} ($3.000 c/u)` };
+        if (qty >= 4 && qty <= 9) return { qty, unitPrice: 7000, total: qty * 7000, label: `${qty}x ${money(qty * 7000)} ($7.000 c/u)` };
+      }
+      const exact = (promo.tiers || []).find(t => Number(t.qty) === qty);
+      return exact || null;
+    };
   } catch (error) {}
 
   function findGroupByName(name) {
@@ -18851,8 +18833,8 @@ const SugCenter = (() => {
     z-index: 8000;
     max-height: min(330px, 46vh);
   }
-  #store-search-autocomplete {
-    display: none !important;
+  #store-search-autocomplete.open {
+    display: block;
   }
   @media(max-width: 760px) {
     .ventas-filters { grid-template-columns: 1fr; }
@@ -19675,14 +19657,8 @@ const SugCenter = (() => {
 
   function patchStoreSearch() {
     if (typeof App === 'undefined' || !App.search || App.__auraFlexStoreSearchPatch) return;
-    const originalSearch = App.search.bind(App);
-    App.search = function(query) {
-      const box = document.getElementById('store-search-autocomplete');
-      if (box) box.remove();
-      return originalSearch(query || '');
-    };
-    const oldBox = document.getElementById('store-search-autocomplete');
-    if (oldBox) oldBox.remove();
+    const input = document.getElementById('search-input');
+    if (input) bindFlexibleInput(input, 'store-search-autocomplete', 'store');
     App.__auraFlexStoreSearchPatch = true;
   }
 
