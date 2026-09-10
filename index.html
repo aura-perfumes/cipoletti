@@ -9806,8 +9806,25 @@ body {
     animation: none !important;
   }
 }
+
+/* Keep the mobile dock to one horizontal row. The previous five-column grid
+   created a second row for the cart at 400 px and covered the page content. */
+@media (max-width: 600px) {
+  .aura-dock-panel {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    align-items: center !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+  }
+
+  .aura-dock-item {
+    width: auto !important;
+    min-width: max-content !important;
+    flex: 0 0 auto !important;
+  }
+}
 </style>
-  <link rel="preload" as="image" href="assets/aura-portal.jpg" fetchpriority="high" />
 </head>
 
 
@@ -11026,7 +11043,7 @@ body {
         { id: 'neuquen', name: 'Neuquén', price: 3000 },
         { id: 'fernandez-oro', name: 'Fernández Oro', price: 3000 }
       ],
-      heroEnc: 'Nueva colección Otoño/Invierno 2026 — Envío gratis (Cipolletti o Neuquén) en pedidos mayores a $50.000', heroTitle: 'Elevamos Tu Esencia', heroSub: 'Fragancias que hablan antes que vos.', heroExtra: '', heroEncOn: true, heroTitleOn: true, heroSubOn: true, heroExtraOn: false, heroLogo: '', heroLogoOn: false, heroBg: '', portalImg: 'assets/aura-portal.jpg'
+      heroEnc: 'Nueva colección Otoño/Invierno 2026 — Envío gratis (Cipolletti o Neuquén) en pedidos mayores a $50.000', heroTitle: 'Elevamos Tu Esencia', heroSub: 'Fragancias que hablan antes que vos.', heroExtra: '', heroEncOn: true, heroTitleOn: true, heroSubOn: true, heroExtraOn: false, heroLogo: '', heroLogoOn: false, heroBg: '', portalImg: ''
     };
     const ORIGIN = { lat: -38.935186, lng: -68.010975 };
     const config = { rate: 500, waNum: '' };
@@ -12038,10 +12055,12 @@ body {
       const navLogo = document.getElementById('store-logo-nav');
       if (navLogo) { if (STORE.heroLogo && STORE.heroLogoOn) { navLogo.innerHTML = `<img src="${STORE.heroLogo}" alt="AURA" style="height:26px;width:auto;object-fit:contain;opacity:.9"/>`; } else if (!navLogo.querySelector('img') || STORE.heroLogo === '' || !STORE.heroLogoOn) { navLogo.innerHTML = 'AURA <span class="store-logo-dot"></span>'; } }
       const hero = document.getElementById('store-hero'); if (STORE.heroBg) { hero.style.setProperty('--hero-overlay', `url('${STORE.heroBg}')`); const preview = document.getElementById('hero-bg-preview'); if (preview) { preview.style.backgroundImage = `url('${STORE.heroBg}')`; preview.textContent = '' } } else { hero.style.removeProperty('--hero-overlay'); const preview = document.getElementById('hero-bg-preview'); if (preview) { preview.style.backgroundImage = ''; preview.textContent = 'Vista previa de fondo principal' } } const portal = document.getElementById('portal-media'); const portalPreview = document.getElementById('portal-img-preview');// Portal background image (full-screen behind buttons)
+      const portalImage = STORE.portalImg === 'assets/aura-portal.jpg' ? '' : STORE.portalImg;
+      if (STORE.portalImg !== portalImage) STORE.portalImg = portalImage;
       const portalScreen = document.getElementById('s-portal');
       if (portalScreen) {
-        if (STORE.portalImg) {
-          portalScreen.style.backgroundImage = `radial-gradient(ellipse 100% 100% at 50% 50%,rgba(8,12,34,.55) 0%,rgba(8,12,34,.80) 60%,rgba(4,7,26,.97) 100%),url('${STORE.portalImg}')`;
+        if (portalImage) {
+          portalScreen.style.backgroundImage = `radial-gradient(ellipse 100% 100% at 50% 50%,rgba(8,12,34,.55) 0%,rgba(8,12,34,.80) 60%,rgba(4,7,26,.97) 100%),url('${portalImage}')`;
           portalScreen.style.backgroundSize = 'cover';
           portalScreen.style.backgroundPosition = 'center';
           portalScreen.style.backgroundRepeat = 'no-repeat';
@@ -12053,7 +12072,7 @@ body {
         }
       }
       if (portal) { portal.classList.remove('has-image'); portal.innerHTML = '<span class="portal-bottle-fallback" style="display:none"></span>'; }
-      if (portalPreview) { if (STORE.portalImg) { portalPreview.style.backgroundImage = `url('${STORE.portalImg}')`; portalPreview.style.backgroundSize = 'cover'; portalPreview.textContent = '' } else { portalPreview.style.backgroundImage = ''; portalPreview.textContent = 'Vista previa del panel inicial' } }
+      if (portalPreview) { if (portalImage) { portalPreview.style.backgroundImage = `url('${portalImage}')`; portalPreview.style.backgroundSize = 'cover'; portalPreview.textContent = '' } else { portalPreview.style.backgroundImage = ''; portalPreview.textContent = 'Vista previa del panel inicial' } }
       // Populate URL input fields
       const cfgPortalUrl = document.getElementById('cfg-portal-img-url'); if (cfgPortalUrl && STORE.portalImg && !STORE.portalImg.startsWith('data:')) cfgPortalUrl.value = STORE.portalImg;
       const cfgHeroBgUrl = document.getElementById('cfg-hero-bg-url'); if (cfgHeroBgUrl && STORE.heroBg && !STORE.heroBg.startsWith('data:')) cfgHeroBgUrl.value = STORE.heroBg;
@@ -12169,15 +12188,15 @@ renderConfigWAPreview();
     };
 
     const App = {
-      show(id) { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); const el = document.getElementById(id); if (el) el.classList.add('active'); if (id === 's-dashboard') { setTimeout(() => { initChart(); Dash.renderInventory(); Dash.renderPedidos(); Dash.renderClientes(); Dash.updatePanelKPIs(); Dash.renderTaxonomy(); PromoAdmin.render() }, 80) } if (id === 's-store') { renderProducts(); applyStoreConfig() } window.scrollTo(0, 0) },
+      show(id) { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); const el = document.getElementById(id); if (el) el.classList.add('active'); if (id === 's-dashboard') { setTimeout(() => { initChart(); Dash.renderInventory(); Dash.renderPedidos(); Dash.renderClientes(); Dash.updatePanelKPIs(); Dash.renderTaxonomy(); window.PromoAdmin?.render() }, 80) } if (id === 's-store') { renderProducts(); applyStoreConfig() } window.scrollTo(0, 0) },
       goStaff() { this.show('s-staff-gate'); document.getElementById('staff-pwd').focus() },
       goStore() { this.show('s-store'); setTimeout(() => { const st = document.getElementById('s-store'); if (st) st.scrollTo({ top: 0, behavior: 'instant' }) }, 30) },
       async staffLogin() { const pwd = document.getElementById('staff-pwd').value.trim(); try { if (crypto?.subtle && await sha256Hex(pwd) === ADMIN_PASSWORD_SHA256) { this.show('s-dashboard') } else { markStaffLoginError() } } catch (e) { markStaffLoginError() } },
       togglePwd() { const inp = document.getElementById('staff-pwd'); inp.type = inp.type === 'password' ? 'text' : 'password' },
-      dashNav(btn, section) { document.querySelectorAll('.dash-nav-item').forEach(b => b.classList.remove('active')); if (btn) btn.classList.add('active');['panel', 'inventario', 'pedidos', 'clientes', 'analiticas', 'config'].forEach(s => { const el = document.getElementById('sec-' + s); if (el) el.style.display = s === section ? '' : 'none' }); if (section === 'inventario') Dash.renderInventory(); else if (section === 'pedidos') Dash.renderPedidos(); else if (section === 'clientes') Dash.renderClientes(); else if (section === 'analiticas') setTimeout(() => Dash.initAnalytics(), 80); else if (section === 'config') setTimeout(() => { Dash.renderTaxonomy(); PromoAdmin.render(); Dash.initConfigTabs(); }, 50) },
+      dashNav(btn, section) { document.querySelectorAll('.dash-nav-item').forEach(b => b.classList.remove('active')); if (btn) btn.classList.add('active');['panel', 'inventario', 'pedidos', 'clientes', 'analiticas', 'config'].forEach(s => { const el = document.getElementById('sec-' + s); if (el) el.style.display = s === section ? '' : 'none' }); if (section === 'inventario') Dash.renderInventory(); else if (section === 'pedidos') Dash.renderPedidos(); else if (section === 'clientes') Dash.renderClientes(); else if (section === 'analiticas') setTimeout(() => Dash.initAnalytics(), 80); else if (section === 'config') setTimeout(() => { Dash.renderTaxonomy(); window.PromoAdmin?.render(); Dash.initConfigTabs(); }, 50) },
       chartPeriod(p, btn) { document.querySelectorAll('.chart-tab').forEach(b => b.classList.remove('active')); btn.classList.add('active'); initChart(p) },
       filter(btn) { document.querySelectorAll('.chip').forEach(c => c.classList.remove('active')); btn.classList.add('active'); currentFilter = btn.dataset.cat; trackZone('filters'); renderProducts() },
-      search(q) { currentSearch = q; renderProducts() },
+      search(q) { currentSearch = q; clearTimeout(this._searchTimer); this._searchTimer = setTimeout(renderProducts, 80) },
       openNosotros() { document.getElementById('nosotros-modal').classList.add('active'); trackZone('about') },
       closeNosotros() { document.getElementById('nosotros-modal').classList.remove('active') },
       openProductDetail(id) { const p = PRODUCTS.find(x => x.id === id); if (!p) return; document.getElementById('detail-meta').textContent = `${getCategoryName(p.cat)} / ${getSubcategoryName(p.cat2)}`; document.getElementById('detail-name').textContent = p.name; document.getElementById('detail-price').textContent = '$' + p.price.toLocaleString('es-AR'); document.getElementById('detail-desc').textContent = p.desc || 'Fragancia destacada de AURA.'; document.getElementById('detail-size').textContent = p.size || '35 ml · EDP'; const main = document.getElementById('detail-main-img'); const thumbs = document.getElementById('detail-thumbs'); const imgs = (p.images && p.images.length ? p.images : [null]).slice(0, 2); const setMain = (src) => { if (src) { main.innerHTML = `<img src="${src}" alt="${escapeHtml(p.name)}" loading="eager" fetchpriority="high"/>` } else { main.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;width:100%;height:100%;opacity:.55">${PERFUME_SVG}</div>` } }; setMain(imgs[0]); thumbs.innerHTML = imgs.map((src, idx) => `<button class="detail-thumb ${idx === 0 ? 'active' : ''}" onclick="App.setDetailImage('${p.id}',${idx})">${src ? `<img src="${src}" alt="${escapeHtml(p.name)}">` : PERFUME_SVG}</button>`).join(''); document.getElementById('detail-add-btn').onclick = () => { Cart.addItem(p); this.closeProductDetail() }; document.getElementById('detail-modal').dataset.pid = id; document.getElementById('detail-modal').classList.add('active'); trackZone('productCard') },
@@ -12192,12 +12211,12 @@ renderConfigWAPreview();
 
     (function () {
       try { const nos = JSON.parse(localStorage.getItem('aura_nosotros') || 'null'); if (nos) { if (nos.title) document.getElementById('nos-modal-title').textContent = nos.title; if (nos.p1) document.getElementById('nos-modal-p1').textContent = nos.p1; if (nos.p2) document.getElementById('nos-modal-p2').textContent = nos.p2;['s1', 's2', 's3'].forEach(k => { if (nos[k + 'v']) { document.getElementById('nos-' + k + 'v').textContent = nos[k + 'v']; document.getElementById('nos-' + k + 'l').textContent = nos[k + 'l'] || '' } }) } } catch (e) { }
-      PromoAdmin.loadOverrides();
+      window.PromoAdmin?.loadOverrides();
       applyStoreConfig();
       renderStoreFilters();
       renderProducts();
       Dash.renderTaxonomy();
-      PromoAdmin.render();
+      window.PromoAdmin?.render();
       Dash.updatePanelKPIs();
       initConfigAccordions();
       window.addEventListener('resize', refreshConfigAccordionHeights);
@@ -13298,6 +13317,11 @@ const PromoAdmin = (() => {
   return { render, save, loadOverrides, openNew, remove, addTier, removeTier, updateImagePreview: updatePromoImagePreview };
 })();
 window.PromoAdmin = PromoAdmin;
+// The first application boot runs before this module is declared. Restore the
+// saved promos here, once the module is available, then refresh the catalog.
+PromoAdmin.loadOverrides();
+renderProducts();
+PromoAdmin.render();
 
 const SugCenter = (() => {
 
